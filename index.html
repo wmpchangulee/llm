@@ -3,90 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LM Studio Pro - Official Interface</title>
-  
+  <title>LM Studio Pro - Debug Mode</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
   <style>
-    :root {
-      --bg-color: #0f1117; --sidebar-bg: #1a1d27; --card-bg: #252936;
-      --accent-color: #3b82f6; --highlight-color: #10b981;
-      --text-main: #e2e8f0; --text-muted: #94a3b8;
-      --user-msg: #3b82f6; --ai-msg: #334155;
-    }
-    
+    :root { --bg-color: #0f1117; --sidebar-bg: #1a1d27; --card-bg: #252936; --accent-color: #3b82f6; --highlight-color: #10b981; --text-main: #e2e8f0; --text-muted: #94a3b8; --user-msg: #3b82f6; --ai-msg: #334155; }
     * { box-sizing: border-box; }
     body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-    
-    /* 사이드바 스타일 */
     #sidebar { width: 300px; background: var(--sidebar-bg); border-right: 1px solid #334155; display: flex; flex-direction: column; }
     .sidebar-section { padding: 20px; border-bottom: 1px solid #334155; }
     #chat-list-container { flex-grow: 1; overflow-y: auto; padding: 10px; }
-
     .chat-item { padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-size: 0.9rem; border: 1px solid transparent; }
     .chat-item:hover { background: #ffffff0a; }
     .chat-item.active { background: var(--card-bg); border-color: var(--accent-color); }
-    .delete-chat { margin-left: auto; cursor: pointer; opacity: 0.3; transition: 0.2s; }
+    .delete-chat { margin-left: auto; cursor: pointer; opacity: 0.3; }
     .delete-chat:hover { opacity: 1; color: #f87171; }
-
-    .model-info-box { background: var(--card-bg); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid #334155; }
-    .model-info-box b { display: block; font-size: 0.85rem; color: var(--highlight-color); }
-
-    /* 메인 채팅창 */
+    .model-info-box { background: var(--card-bg); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid #334155; font-size: 0.85rem; }
     #main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-color); }
     #chatBox { flex-grow: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-    
-    .message { max-width: 85%; padding: 15px; border-radius: 12px; line-height: 1.6; word-break: break-word; position: relative; }
-    .user { align-self: flex-end; background: var(--user-msg); border-bottom-right-radius: 2px; color: white; }
+    .message { max-width: 85%; padding: 15px; border-radius: 12px; line-height: 1.6; word-break: break-word; }
+    .user { align-self: flex-end; background: var(--user-msg); border-bottom-right-radius: 2px; color: white; white-space: pre-wrap; }
     .assistant { align-self: flex-start; background: var(--ai-msg); border-bottom-left-radius: 2px; }
-    
-    /* 마크다운 스타일링 */
     .assistant pre { background: #000; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #444; }
-    .assistant code { font-family: 'Fira Code', monospace; font-size: 0.9em; background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
-    .assistant table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-    .assistant th, .assistant td { border: 1px solid #555; padding: 8px; }
-
-    /* 하단 입력 영역 */
     .input-area-wrapper { padding: 20px 40px; background: var(--bg-color); border-top: 1px solid #334155; }
     .input-area { display: flex; gap: 15px; align-items: flex-end; max-width: 1000px; margin: 0 auto; }
-    
-    #chatInput { 
-      flex-grow: 1; background: var(--card-bg); border: 1px solid #334155; color: white; 
-      padding: 12px; border-radius: 10px; outline: none; resize: none; 
-      min-height: 48px; max-height: 200px; font-family: inherit; line-height: 1.5;
-    }
-    
+    #chatInput { flex-grow: 1; background: var(--card-bg); border: 1px solid #334155; color: white; padding: 12px; border-radius: 10px; outline: none; resize: none; min-height: 48px; max-height: 200px; font-family: inherit; }
     .btn { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
     .btn-send { background: var(--accent-color); color: white; width: 48px; height: 48px; flex-shrink: 0; }
-    .btn-send:disabled { background: #475569; cursor: not-allowed; }
-
-    /* 모달 */
-    #modelModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; }
-    .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 15px; width: 450px; max-height: 80vh; overflow-y: auto; border: 1px solid #444; }
+    #modelModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index: 1000; justify-content:center; align-items:center; }
+    .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 15px; width: 450px; max-height: 80vh; overflow-y: auto; }
     .model-item { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 2px solid transparent; cursor: pointer; }
     .model-item.active { border-color: var(--highlight-color); }
-    .model-item:hover { background: #323746; }
   </style>
 </head>
 <body>
-
 <div id="sidebar">
   <div class="sidebar-section">
-    <div style="font-size:0.75rem; color:var(--text-muted); font-weight:bold;">CURRENT MODEL</div>
-    <div id="active-model-info" class="model-info-box">연결된 모델 없음</div>
-    <button class="btn btn-send" style="width:100%; margin-top:10px; border-radius:6px; height:35px; font-size:0.8rem;" onclick="openModelModal()">교체 및 설정</button>
+    <div style="font-size:0.75rem; color:var(--text-muted); font-weight:bold;">MODEL</div>
+    <div id="active-model-info" class="model-info-box">연결 대기 중...</div>
+    <button class="btn btn-send" style="width:100%; margin-top:10px; height:35px; font-size:0.8rem;" onclick="openModelModal()">모델 교체</button>
   </div>
-  
   <div id="chat-list-container">
-    <div style="font-size:0.75rem; color:var(--text-muted); font-weight:bold; margin: 10px 0 10px 10px;">CHATS</div>
-    <button class="btn" style="width:calc(100% - 20px); background:#ffffff10; color:white; margin: 0 10px 15px 10px; padding:10px; text-align:left;" onclick="createNewChat()">+ New Chat</button>
+    <button class="btn" style="width:calc(100% - 20px); background:#ffffff10; color:white; margin: 0 10px 15px 10px; padding:10px;" onclick="createNewChat()">+ New Chat</button>
     <div id="chat-list"></div>
   </div>
 </div>
-
 <div id="main-content">
   <div id="chatBox"></div>
   <div class="input-area-wrapper">
@@ -96,50 +59,55 @@
     </div>
   </div>
 </div>
-
-<div id="modelModal">
-  <div class="modal-content">
-    <h3 style="margin:0 0 20px 0;">Available Models</h3>
-    <div id="modal-model-list"></div>
-    <button class="btn btn-send" style="width:100%; margin-top:10px; height:40px;" onclick="closeModelModal()">닫기</button>
-  </div>
-</div>
+<div id="modelModal"><div class="modal-content"><h3 style="margin:0 0 20px 0;">Select Model</h3><div id="modal-model-list"></div><button class="btn btn-send" style="width:100%; margin-top:10px; height:40px;" onclick="closeModelModal()">닫기</button></div></div>
 
 <script>
 const BASE_URL = "https://gil-subminiature-unripely.ngrok-free.dev";
-let currentModel = null;
-let currentInstanceId = null;
-let isSending = false;
+let currentModel = null, isSending = false;
 let chats = JSON.parse(localStorage.getItem('lm_chats') || '[]');
 let currentChatId = localStorage.getItem('lm_current_chat_id');
 
 marked.setOptions({ breaks: true, gfm: true, highlight: (code) => hljs.highlightAuto(code).value });
 
-// 1. 모델 관리
+// 공통 fetch 함수 (디버깅 로깅 포함)
+async function apiFetch(endpoint, options = {}) {
+  console.log(`[Request] ${options.method || 'GET'} ${endpoint}`);
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true", ...(options.headers || {}) }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API Error] Status ${response.status}:`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    return response;
+  } catch (err) {
+    console.error(`[Network Error]`, err);
+    throw err;
+  }
+}
+
 async function openModelModal() {
   document.getElementById('modelModal').style.display = 'flex';
   const list = document.getElementById('modal-model-list');
-  list.innerHTML = "<p>Loading models...</p>";
-  
+  list.innerHTML = "<p>Loading...</p>";
   try {
-    const res = await fetch(`${BASE_URL}/api/v1/models`, { headers: {"ngrok-skip-browser-warning": "true"} });
+    const res = await apiFetch("/api/v1/models");
     const data = await res.json();
     list.innerHTML = "";
-    
     data.models.forEach(m => {
-      const isLoaded = m.loaded_instances.length > 0;
+      const active = currentModel === m.key;
       const div = document.createElement('div');
-      div.className = `model-item ${currentModel === m.key ? 'active' : ''}`;
+      div.className = `model-item ${active ? 'active' : ''}`;
       div.onclick = () => switchModel(m.key);
-      div.innerHTML = `
-        <div style="font-weight:bold;">${m.display_name}</div>
-        <div style="font-size:0.75rem; color:var(--text-muted);">${m.key}</div>
-        ${isLoaded && currentModel === m.key ? '<div style="color:var(--highlight-color); font-size:0.7rem; margin-top:5px;">● Currently Loaded</div>' : ''}
-      `;
+      div.innerHTML = `<b>${m.display_name}</b><br><small>${m.key}</small>`;
       list.appendChild(div);
-      if(isLoaded && !currentModel) syncModelInfo(m.key, m.loaded_instances[0].id);
+      if(m.loaded_instances.length > 0 && !currentModel) syncModelUI(m.key);
     });
-  } catch(e) { list.innerHTML = "Error connecting to LM Studio."; }
+  } catch(e) { list.innerHTML = "Check Console (F12)"; }
 }
 
 function closeModelModal() { document.getElementById('modelModal').style.display = 'none'; }
@@ -147,90 +115,78 @@ function closeModelModal() { document.getElementById('modelModal').style.display
 async function switchModel(key) {
   if (isSending) return;
   const list = document.getElementById('modal-model-list');
-  list.innerHTML = "<div style='text-align:center; padding:20px;'><i class='fas fa-spinner fa-spin'></i><br>교체 중... 모든 기존 모델을 언로드합니다.</div>";
+  const originalHTML = list.innerHTML;
+  list.innerHTML = "<div style='text-align:center'><i class='fas fa-spinner fa-spin'></i><br>교체 중... (F12 확인)</div>";
   
   try {
-    // 단일 모델 보장을 위해 모든 인스턴스 언로드 루프
-    const statusRes = await fetch(`${BASE_URL}/api/v1/models`, { headers: {"ngrok-skip-browser-warning": "true"} });
+    // 1. 기존 인스턴스 전수 언로드
+    const statusRes = await apiFetch("/api/v1/models");
     const statusData = await statusRes.json();
     for (const m of statusData.models) {
       for (const inst of m.loaded_instances) {
-        await fetch(`${BASE_URL}/api/v1/models/unload`, {
-          method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ instance_id: inst.id })
-        });
+        console.log(`Unloading: ${inst.id}`);
+        await apiFetch("/api/v1/models/unload", { method: "POST", body: JSON.stringify({ instance_id: inst.id }) });
       }
     }
-
-    // 신규 로드
-    const loadRes = await fetch(`${BASE_URL}/api/v1/models/load`, {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ model: key })
-    });
+    
+    // 2. 새 모델 로드
+    console.log(`Loading: ${key}`);
+    const loadRes = await apiFetch("/api/v1/models/load", { method: "POST", body: JSON.stringify({ model: key }) });
     
     if (loadRes.ok) {
-      const loadData = await loadRes.json();
-      syncModelInfo(key, loadData.instance_id || "");
+      syncModelUI(key);
       closeModelModal();
-      appendMessage("assistant", `✔️ **${key}** 모델로 교체되었습니다.`);
+      // 에러 발생했던 지점: appendToUI로 수정 완료
+      appendToUI("assistant", `✔️ **${key}** 모델이 성공적으로 로드되었습니다.`);
     }
-  } catch (e) { alert("모델 교체 실패"); openModelModal(); }
-}
-
-function syncModelInfo(key, instId) {
-  currentModel = key;
-  currentInstanceId = instId;
-  document.getElementById('active-model-info').innerHTML = `<b>${key}</b><span style="font-size:0.7rem; color:var(--text-muted);">Instance: ${instId || 'N/A'}</span>`;
-}
-
-// 2. 메시지 전송 및 입력 제어
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendBtn');
-
-chatInput.addEventListener('keydown', (e) => {
-  if (e.isComposing) return; // 한글 중복 전송 방지
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
+  } catch (e) {
+    console.error("Switch failed:", e);
+    alert("모델 교체 실패! 콘솔창을 확인하세요.");
+    list.innerHTML = originalHTML;
   }
+}
+
+function syncModelUI(key) {
+  currentModel = key;
+  document.getElementById('active-model-info').innerHTML = `<b style="color:var(--highlight-color)">● ${key}</b>`;
+}
+
+const chatInput = document.getElementById('chatInput');
+chatInput.addEventListener('keydown', (e) => {
+  if (e.isComposing) return;
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
 async function sendMessage() {
   const text = chatInput.value.trim();
   if (!text || !currentModel || !currentChatId || isSending) return;
-
+  
   isSending = true;
+  const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
-  sendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
-
+  
   const chat = chats.find(c => c.id === currentChatId);
-  if (chat.messages.length === 0) {
-    chat.title = text.substring(0, 15) + (text.length > 15 ? '...' : '');
-    renderChatList();
-  }
-
+  if (chat.messages.length === 0) { chat.title = text.substring(0, 15); renderChatList(); }
+  
   chat.messages.push({ role: "user", content: text });
   appendToUI("user", text);
-  chatInput.value = "";
-  chatInput.style.height = '48px';
-
+  chatInput.value = ""; chatInput.style.height = '48px';
+  
   const aiDiv = appendToUI("assistant", "");
   let fullContent = "";
-
+  
   try {
-    const res = await fetch(`${BASE_URL}/v1/chat/completions`, {
-      method: "POST", headers: {"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"},
-      body: JSON.stringify({ model: currentModel, messages: chat.messages, stream: true })
+    const res = await apiFetch("/v1/chat/completions", { 
+      method: "POST", 
+      body: JSON.stringify({ model: currentModel, messages: chat.messages, stream: true }) 
     });
-
+    
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value);
-      const lines = chunk.split("\n");
+      const lines = decoder.decode(value).split("\n");
       for (const line of lines) {
         if (line.startsWith("data: ") && !line.includes("[DONE]")) {
           try {
@@ -245,58 +201,41 @@ async function sendMessage() {
     }
     chat.messages.push({ role: "assistant", content: fullContent });
     localStorage.setItem('lm_chats', JSON.stringify(chats));
-  } catch (e) { aiDiv.innerText = "Error: Check server connection."; }
-  finally {
-    isSending = false;
-    sendBtn.disabled = false;
-    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
-    chatInput.focus();
-  }
+  } catch (e) { aiDiv.innerText = "Error: " + e.message; }
+  finally { isSending = false; sendBtn.disabled = false; chatInput.focus(); }
 }
 
-// 3. 채팅 세션 및 UI 관리
 function createNewChat() {
   const id = Date.now().toString();
-  chats.unshift({ id, title: "새로운 대화", messages: [] });
+  chats.unshift({ id, title: "새 대화", messages: [] });
   localStorage.setItem('lm_chats', JSON.stringify(chats));
   selectChat(id);
 }
 
 function selectChat(id) {
-  currentChatId = id;
-  localStorage.setItem('lm_current_chat_id', id);
-  renderChatBox();
-  renderChatList();
+  currentChatId = id; localStorage.setItem('lm_current_chat_id', id);
+  renderChatBox(); renderChatList();
 }
 
 function renderChatList() {
-  const list = document.getElementById('chat-list');
-  list.innerHTML = "";
+  const list = document.getElementById('chat-list'); list.innerHTML = "";
   chats.forEach(c => {
     const div = document.createElement('div');
     div.className = `chat-item ${currentChatId === c.id ? 'active' : ''}`;
     div.onclick = () => selectChat(c.id);
-    div.innerHTML = `
-      <i class="far fa-comment-alt" style="font-size:0.8rem;"></i>
-      <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.title}</span>
-      <i class="fas fa-times delete-chat" onclick="deleteChat('${c.id}', event)"></i>
-    `;
+    div.innerHTML = `<i class="far fa-comment"></i><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</span><i class="fas fa-times delete-chat" onclick="deleteChat('${c.id}', event)"></i>`;
     list.appendChild(div);
   });
 }
 
 function deleteChat(id, e) {
-  e.stopPropagation();
-  chats = chats.filter(c => c.id !== id);
+  e.stopPropagation(); chats = chats.filter(c => c.id !== id);
   if (currentChatId === id) currentChatId = chats.length ? chats[0].id : null;
-  localStorage.setItem('lm_chats', JSON.stringify(chats));
-  localStorage.setItem('lm_current_chat_id', currentChatId);
-  renderChatList(); renderChatBox();
+  localStorage.setItem('lm_chats', JSON.stringify(chats)); renderChatList(); renderChatBox();
 }
 
 function renderChatBox() {
-  const box = document.getElementById('chatBox');
-  box.innerHTML = "";
+  const box = document.getElementById('chatBox'); box.innerHTML = "";
   const chat = chats.find(c => c.id === currentChatId);
   if (chat) chat.messages.forEach(m => appendToUI(m.role, m.content));
 }
@@ -305,28 +244,21 @@ function appendToUI(role, content) {
   const box = document.getElementById('chatBox');
   const div = document.createElement('div');
   div.className = `message ${role}`;
-  div.innerHTML = role === "assistant" ? marked.parse(content) : content.replace(/\n/g, '<br>');
+  if(role === 'user') div.innerText = content;
+  else div.innerHTML = marked.parse(content);
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return div;
 }
 
-// 입력창 높이 자동 조절
-chatInput.addEventListener('input', function() {
-  this.style.height = '48px';
-  this.style.height = (this.scrollHeight) + 'px';
-});
+chatInput.addEventListener('input', function() { this.style.height = '48px'; this.style.height = (this.scrollHeight) + 'px'; });
+if (chats.length === 0) createNewChat(); else selectChat(currentChatId || chats[0].id);
 
-// 초기 구동
-if (chats.length === 0) createNewChat();
-else selectChat(currentChatId || chats[0].id);
-// 시작 시 현재 로드된 모델 체크
-fetch(`${BASE_URL}/api/v1/models`, { headers: {"ngrok-skip-browser-warning": "true"} })
-  .then(res => res.json())
-  .then(data => {
-    const loaded = data.models.find(m => m.loaded_instances.length > 0);
-    if(loaded) syncModelInfo(loaded.key, loaded.loaded_instances[0].id);
-  });
+// 초기 모델 체크
+apiFetch("/api/v1/models").then(res => res.json()).then(data => {
+  const loaded = data.models.find(m => m.loaded_instances.length > 0);
+  if(loaded) syncModelUI(loaded.key);
+}).catch(e => console.log("Initial check failed. Check ngrok/server."));
 </script>
 </body>
 </html>
