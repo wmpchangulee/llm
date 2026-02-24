@@ -3,317 +3,571 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LM Studio Pro - Full Capability Debugger</title>
+  <title>LM Studio Pro</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    :root { --bg-color: #0f1117; --sidebar-bg: #1a1d27; --card-bg: #252936; --accent-color: #3b82f6; --highlight-color: #10b981; --reasoning-color: #f59e0b; --tool-color: #8b5cf6; --text-main: #e2e8f0; --text-muted: #94a3b8; --user-msg: #3b82f6; --ai-msg: #334155; }
-    * { box-sizing: border-box; }
-    body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-    #sidebar { width: 320px; background: var(--sidebar-bg); border-right: 1px solid #334155; display: flex; flex-direction: column; }
-    .sidebar-section { padding: 20px; border-bottom: 1px solid #334155; }
-    #chat-list-container { flex-grow: 1; overflow-y: auto; padding: 10px; }
-    .chat-item { padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-size: 0.9rem; border: 1px solid transparent; }
-    .chat-item.active { background: var(--card-bg); border-color: var(--accent-color); }
-    .delete-chat { margin-left: auto; cursor: pointer; opacity: 0.3; }
-    .delete-chat:hover { opacity: 1; color: #f87171; }
-    .model-info-box { background: var(--card-bg); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid #334155; font-size: 0.85rem; line-height: 1.4; }
-    
-    /* 공통 배지 스타일 */
-    .cap-badge { font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: bold; color: white; background: #444; text-transform: uppercase; }
-    .badge-vis { background: var(--accent-color) !important; }
-    .badge-rsn { background: var(--reasoning-color) !important; }
-    .badge-tool { background: var(--tool-color) !important; }
-    .badge-load { background: var(--highlight-color) !important; }
+    :root {
+      --bg: #0f1117; --sidebar-bg: #1a1d27; --card-bg: #252936;
+      --accent: #3b82f6; --green: #10b981; --amber: #f59e0b; --purple: #8b5cf6;
+      --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
+      --user-bg: #3b82f6; --ai-bg: #334155;
+      --sidebar-w: 300px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100dvh; overflow: hidden; }
 
-    #main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
-    #chatBox { flex-grow: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-    .message { max-width: 85%; padding: 15px; border-radius: 12px; line-height: 1.6; word-break: break-word; }
-    .user { align-self: flex-end; background: var(--user-msg); border-bottom-right-radius: 2px; color: white; }
-    .assistant { align-self: flex-start; background: var(--ai-msg); border-bottom-left-radius: 2px; }
-    .msg-image { max-width: 100%; max-height: 300px; border-radius: 8px; margin-top: 10px; display: block; }
-    
-    .reasoning-box { background: rgba(0, 0, 0, 0.2); border-left: 3px solid var(--reasoning-color); margin: 5px 0 15px 0; padding: 12px; border-radius: 4px; font-size: 0.9rem; color: var(--text-muted); }
-    .reasoning-header { font-size: 0.75rem; font-weight: bold; color: var(--reasoning-color); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-w); background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      transition: transform .25s ease;
+      position: relative; z-index: 10;
+    }
+    #sidebar.hidden { transform: translateX(-100%); position: fixed; height: 100dvh; }
+    .sidebar-head { padding: 16px; border-bottom: 1px solid var(--border); }
+    .model-box { background: var(--card-bg); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid var(--border); font-size: .83rem; }
+    #chat-list-wrap { flex: 1; overflow-y: auto; padding: 8px; }
+    .new-chat-btn { width: 100%; background: #ffffff12; color: var(--text); border: none; border-radius: 8px; padding: 11px; cursor: pointer; margin-bottom: 12px; font-size: .9rem; }
+    .new-chat-btn:hover { background: #ffffff20; }
+    .chat-item { padding: 11px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 9px; font-size: .88rem; border: 1px solid transparent; margin-bottom: 4px; }
+    .chat-item:hover { background: #ffffff08; }
+    .chat-item.active { background: var(--card-bg); border-color: var(--accent); }
+    .chat-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .del-btn { opacity: 0; cursor: pointer; color: var(--muted); font-size: .8rem; }
+    .chat-item:hover .del-btn { opacity: 1; }
+    .del-btn:hover { color: #f87171; }
 
-    .input-area-wrapper { padding: 20px 40px; background: var(--bg-color); border-top: 1px solid #334155; }
-    .input-area { display: flex; gap: 12px; align-items: flex-end; max-width: 1000px; margin: 0 auto; }
-    #chatInput { flex-grow: 1; background: var(--card-bg); border: 1px solid #334155; color: white; padding: 12px; border-radius: 10px; outline: none; resize: none; min-height: 48px; max-height: 200px; font-family: inherit; }
-    #image-preview-bar { display: none; padding: 10px; background: #1a1d27; border-radius: 10px; margin-bottom: 10px; position: relative; width: fit-content; border: 1px dashed var(--accent-color); }
-    #image-preview-bar img { height: 80px; border-radius: 5px; }
+    /* ── Overlay (mobile sidebar backdrop) ── */
+    #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 9; }
+    #overlay.show { display: block; }
 
-    .btn { cursor: pointer; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .btn-send { background: var(--accent-color); color: white; width: 48px; height: 48px; flex-shrink: 0; }
-    .btn-icon { background: var(--card-bg); color: var(--text-muted); width: 48px; height: 48px; border: 1px solid #334155; }
-    .btn-icon:disabled { opacity: 0.2; cursor: not-allowed; }
+    /* ── Main ── */
+    #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
-    #modelModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index: 1000; justify-content:center; align-items:center; }
-    .modal-content { background: var(--sidebar-bg); padding: 25px; border-radius: 15px; width: 500px; max-height: 80vh; overflow-y: auto; }
-    .model-item { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 2px solid transparent; cursor: pointer; position: relative; }
-    .model-item.active { border-color: var(--highlight-color); }
-    .badge-container { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+    /* ── Top bar (mobile) ── */
+    #topbar {
+      display: none; align-items: center; gap: 12px;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      background: var(--sidebar-bg);
+    }
+    #topbar button { background: none; border: none; color: var(--text); font-size: 1.1rem; cursor: pointer; }
+    #topbar .model-tag { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+    /* ── Chat box ── */
+    #chatBox { flex: 1; padding: 24px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+    @media (min-width: 640px) { #chatBox { padding: 28px 32px; } }
+
+    .message { max-width: min(85%, 720px); padding: 13px 16px; border-radius: 14px; line-height: 1.65; word-break: break-word; }
+    .user { align-self: flex-end; background: var(--user-bg); border-bottom-right-radius: 3px; color: #fff; }
+    .assistant { align-self: flex-start; background: var(--ai-bg); border-bottom-left-radius: 3px; }
+    .msg-image { max-width: 100%; max-height: 260px; border-radius: 8px; margin-top: 10px; display: block; border: 1px solid #ffffff18; }
+
+    /* ── Reasoning box (collapsible) ── */
+    .reasoning-wrap { margin-bottom: 12px; }
+    .reasoning-toggle {
+      display: flex; align-items: center; gap: 7px;
+      font-size: .75rem; font-weight: 700; color: var(--amber);
+      background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.25);
+      border-radius: 6px; cursor: pointer; padding: 6px 10px; width: 100%;
+      letter-spacing: .03em;
+    }
+    .reasoning-toggle:hover { background: rgba(245,158,11,.14); }
+    .reasoning-toggle .chevron { transition: transform .2s; font-size: .7rem; margin-left: auto; }
+    .reasoning-toggle.open .chevron { transform: rotate(180deg); }
+    .reasoning-body {
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(245,158,11,.2);
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      padding: 0 14px;
+      font-size: .88rem; color: var(--muted);
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s ease, padding .35s ease;
+    }
+    .reasoning-body.open { max-height: 2000px; padding: 12px 14px; }
+    .reasoning-body ol, .reasoning-body ul { padding-left: 1.5em; margin: 6px 0; }
+    .reasoning-body li { margin: 3px 0; }
+    .reasoning-body p { margin: 5px 0; }
+    /* 일반 메시지 영역도 동일하게 */
+    .message ol, .message ul { padding-left: 1.5em; margin: 6px 0; }
+    .message li { margin: 3px 0; }
+    .message p { margin: 5px 0; }
+
+    /* ── Input area ── */
+    .input-wrap { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); }
+    @media (min-width: 640px) { .input-wrap { padding: 14px 32px; } }
+    #img-preview { display: none; position: relative; width: fit-content; margin-bottom: 8px; }
+    #img-preview img { height: 70px; border-radius: 6px; border: 1px dashed var(--accent); }
+    #img-preview button { position: absolute; top: -8px; right: -8px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: .75rem; line-height: 20px; text-align: center; }
+    .input-row { display: flex; gap: 8px; align-items: flex-end; max-width: 760px; margin: 0 auto; }
+    #chatInput { flex: 1; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 11px 14px; border-radius: 10px; outline: none; resize: none; min-height: 46px; max-height: 180px; font-family: inherit; font-size: .95rem; }
+    #chatInput:focus { border-color: var(--accent); }
+    .ibtn { background: var(--card-bg); border: 1px solid var(--border); color: var(--muted); width: 46px; height: 46px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ibtn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+    .ibtn:disabled { opacity: .4; cursor: not-allowed; }
+    #sendBtn { background: var(--accent); border: none; color: #fff; width: 46px; height: 46px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    #sendBtn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Badges ── */
+    .badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .badge { font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: 700; color: #fff; background: #555; text-transform: uppercase; }
+    .bv { background: var(--accent); } .br { background: var(--amber); }
+    .bt { background: var(--purple); } .bl { background: var(--green); }
+
+    /* ── Modal ── */
+    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
+    #modal.show { display: flex; }
+    .modal-box { background: var(--sidebar-bg); padding: 22px; border-radius: 14px; width: 100%; max-width: 480px; max-height: 82dvh; overflow-y: auto; border: 1px solid var(--border); }
+    .model-item { background: var(--card-bg); padding: 14px; border-radius: 10px; margin-bottom: 9px; border: 2px solid transparent; cursor: pointer; }
+    .model-item:hover { border-color: #444; }
+    .model-item.active { border-color: var(--green); }
+
+    /* ── Responsive: mobile sidebar ── */
+    @media (max-width: 639px) {
+      #sidebar { position: fixed; height: 100dvh; transform: translateX(-100%); }
+      #sidebar.show { transform: translateX(0); }
+      #topbar { display: flex; }
+      #main { width: 100%; }
+    }
   </style>
 </head>
 <body>
 
+<!-- Sidebar -->
 <div id="sidebar">
-  <div class="sidebar-section">
-    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; letter-spacing:1px; margin-bottom:5px;">SYSTEM STATUS</div>
-    <div id="active-model-info" class="model-info-box">연결 확인 중...</div>
-    <button class="btn btn-send" style="width:100%; margin-top:10px; height:38px; font-size:0.8rem;" onclick="openModelModal()">모델 변경 (Unload/Load)</button>
+  <div class="sidebar-head">
+    <div style="font-size:.7rem;color:var(--muted);font-weight:700;letter-spacing:1px">SYSTEM STATUS</div>
+    <div id="model-info" class="model-box">연결 확인 중...</div>
+    <button class="new-chat-btn" style="margin-top:10px" onclick="openModal()">모델 라이브러리</button>
   </div>
-  <div id="chat-list-container">
-    <button class="btn" style="width:calc(100% - 20px); background:#ffffff10; color:white; margin: 0 10px 15px 10px; padding:12px;" onclick="createNewChat()">+ New Chat</button>
+  <div id="chat-list-wrap">
+    <button class="new-chat-btn" onclick="createNewChat()">＋ New Chat</button>
     <div id="chat-list"></div>
   </div>
 </div>
+<div id="overlay" onclick="closeSidebar()"></div>
 
-<div id="main-content">
+<!-- Main -->
+<div id="main">
+  <!-- Mobile topbar -->
+  <div id="topbar">
+    <button onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+    <span class="model-tag" id="topbar-model">모델 미선택</span>
+    <button onclick="openModal()" style="font-size:.85rem;color:var(--muted)"><i class="fas fa-layer-group"></i></button>
+  </div>
+
   <div id="chatBox"></div>
-  <div class="input-area-wrapper">
-    <div id="image-preview-bar">
-      <img id="img-preview-target" src="">
-      <button onclick="clearSelectedImage()" style="position:absolute; top:-10px; right:-10px; background:#ef4444; color:white; border-radius:50%; width:24px; height:24px; border:none; cursor:pointer;">×</button>
+
+  <div class="input-wrap">
+    <div id="img-preview">
+      <img id="img-thumb" src="">
+      <button onclick="clearImg()">×</button>
     </div>
-    <div class="input-area">
-      <button id="imgBtn" class="btn btn-icon" onclick="document.getElementById('fileInput').click()" title="Vision 미지원"><i class="fas fa-image"></i></button>
-      <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFileSelect(event)">
-      <textarea id="chatInput" rows="1" placeholder="메시지 입력..."></textarea>
-      <button id="sendBtn" class="btn btn-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+    <div class="input-row">
+      <button id="imgBtn" class="ibtn" onclick="document.getElementById('fileInput').click()" title="Vision 미지원">
+        <i class="fas fa-image"></i>
+      </button>
+      <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile(event)">
+      <textarea id="chatInput" rows="1" placeholder="메시지 입력... (Shift+Enter 줄바꿈)"></textarea>
+      <button id="sendBtn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
 </div>
 
-<div id="modelModal"><div class="modal-content"><h3 style="margin-top:0;">모델 라이브러리</h3><div id="modal-model-list"></div><button class="btn btn-send" style="width:100%; margin-top:15px; height:40px;" onclick="closeModelModal()">닫기</button></div></div>
+<!-- Model Modal -->
+<div id="modal">
+  <div class="modal-box">
+    <h3 style="margin-bottom:16px">모델 라이브러리</h3>
+    <div id="modal-list"></div>
+    <button class="new-chat-btn" style="margin-top:10px" onclick="closeModal()">닫기</button>
+  </div>
+</div>
 
 <script>
 const BASE_URL = "https://nonconferrable-tactlessly-jenell.ngrok-free.dev";
-let currentModel = null, isSending = false, selectedImageBase64 = null;
+let currentModel = null, isSending = false, imgBase64 = null;
 let chats = JSON.parse(localStorage.getItem('lm_chats') || '[]');
 let currentChatId = localStorage.getItem('lm_current_chat_id');
 
-marked.setOptions({ breaks: true, gfm: true, highlight: (code) => hljs.highlightAuto(code).value });
+marked.setOptions({ breaks: true, gfm: true });
 
-async function apiFetch(endpoint, options = {}) {
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true", ...(options.headers || {}) }
+// ── API ──
+async function apiFetch(ep, opts = {}) {
+  const res = await fetch(BASE_URL + ep, {
+    ...opts,
+    headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true", ...(opts.headers || {}) }
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response;
+  if (!res.ok) { const t = await res.text().catch(() => ""); throw new Error(`HTTP ${res.status}: ${t}`); }
+  return res;
 }
 
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    selectedImageBase64 = ev.target.result;
-    document.getElementById('img-preview-target').src = selectedImageBase64;
-    document.getElementById('image-preview-bar').style.display = 'block';
+// ── Sidebar (mobile) ──
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ── Image ──
+function handleFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    imgBase64 = ev.target.result;
+    document.getElementById('img-thumb').src = imgBase64;
+    document.getElementById('img-preview').style.display = 'block';
   };
-  reader.readAsDataURL(file);
+  r.readAsDataURL(f);
 }
-
-function clearSelectedImage() {
-  selectedImageBase64 = null;
+function clearImg() {
+  imgBase64 = null;
   document.getElementById('fileInput').value = "";
-  document.getElementById('image-preview-bar').style.display = 'none';
+  document.getElementById('img-preview').style.display = 'none';
 }
 
-/** 모델 리스트 생성 시 배지 감지 로직 고정 **/
-async function openModelModal() {
-  document.getElementById('modelModal').style.display = 'flex';
-  const list = document.getElementById('modal-model-list');
-  list.innerHTML = "모델 정보를 동기화 중...";
+// ── Modal ──
+async function openModal() {
+  document.getElementById('modal').classList.add('show');
+  const list = document.getElementById('modal-list');
+  list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-circle-notch fa-spin'></i></div>";
   try {
-    const res = await apiFetch("/api/v1/models");
-    const data = await res.json();
+    const data = await apiFetch("/api/v1/models").then(r => r.json());
     list.innerHTML = "";
     data.models.forEach(m => {
-      const isLoaded = m.loaded_instances?.length > 0;
-      const isVis = m.capabilities?.vision === true;
-      const isTool = m.capabilities?.trained_for_tool_use === true;
-      const isRsn = m.key.toLowerCase().includes('r1') || m.key.toLowerCase().includes('reasoning');
-
-      const div = document.createElement('div');
-      div.className = `model-item ${currentModel === m.key ? 'active' : ''}`;
-      div.onclick = () => switchModel(m.key);
-      div.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
+      const loaded = m.loaded_instances?.length > 0;
+      const isV = m.capabilities?.vision === true;
+      const isT = m.capabilities?.trained_for_tool_use === true;
+      const isR = m.key.toLowerCase().includes('r1') || m.key.toLowerCase().includes('reasoning');
+      const d = document.createElement('div');
+      d.className = `model-item ${currentModel === m.key ? 'active' : ''}`;
+      d.onclick = () => switchModel(m.key);
+      d.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
           <b>${m.display_name || m.id}</b>
-          ${isLoaded ? '<span class="cap-badge badge-load">LOADED</span>' : ''}
+          ${loaded ? '<span class="badge bl">LOADED</span>' : ''}
         </div>
-        <div class="badge-container">
-          <span class="cap-badge">TXT</span>
-          ${isVis ? '<span class="cap-badge badge-vis">VIS</span>' : ''}
-          ${isTool ? '<span class="cap-badge badge-tool">TOOL</span>' : ''}
-          ${isRsn ? '<span class="cap-badge badge-rsn">RSN</span>' : ''}
+        <div class="badges">
+          <span class="badge">TXT</span>
+          ${isV ? '<span class="badge bv">VIS</span>' : ''}
+          ${isT ? '<span class="badge bt">TOOL</span>' : ''}
+          ${isR ? '<span class="badge br">RSN</span>' : ''}
         </div>
-        <div style="margin-top:5px; font-size:0.7rem; color:var(--text-muted)">${m.key}</div>
-      `;
-      list.appendChild(div);
+        <div style="margin-top:5px;font-size:.73rem;color:var(--muted)">${m.key}</div>`;
+      list.appendChild(d);
     });
-  } catch(e) { list.innerHTML = "API 연결 오류"; }
+  } catch(e) { list.innerHTML = `<div style='color:#f87171'>연결 실패: ${e.message}</div>`; }
 }
-
-function closeModelModal() { document.getElementById('modelModal').style.display = 'none'; }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
 async function switchModel(key) {
   if (isSending) return;
-  const list = document.getElementById('modal-model-list');
-  list.innerHTML = "<div style='text-align:center; padding:20px;'><i class='fas fa-spinner fa-spin'></i> 메모리 비우는 중...</div>";
+  const list = document.getElementById('modal-list');
+  list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-sync fa-spin'></i> 교체 중...</div>";
   try {
-    const statusRes = await apiFetch("/api/v1/models");
-    const statusData = await statusRes.json();
-    for (const model of statusData.models) {
-      for (const inst of model.loaded_instances) {
+    const d = await apiFetch("/api/v1/models").then(r => r.json());
+    for (const m of d.models)
+      for (const inst of (m.loaded_instances || []))
         await apiFetch("/api/v1/models/unload", { method: "POST", body: JSON.stringify({ instance_id: inst.id }) });
-      }
-    }
-    list.innerHTML = "<div style='text-align:center; padding:20px;'><i class='fas fa-spinner fa-spin'></i> 새 모델 임포트 중...</div>";
     await apiFetch("/api/v1/models/load", { method: "POST", body: JSON.stringify({ model: key }) });
-    syncModelUI(key);
-    closeModelModal();
-    appendToUI("assistant", `✔️ **${key}** 모델이 준비되었습니다.`);
-  } catch (e) { alert("교체 실패"); openModelModal(); }
+    syncModelUI(key); closeModal();
+    appendMsg("assistant", `### 🆕 모델 교체 완료\n**${key}** 준비됐습니다.`);
+  } catch(e) { alert("오류: " + e.message); openModal(); }
 }
 
-/** 대시보드 상태 동기화 및 이미지 버튼 제어 **/
 function syncModelUI(key) {
   currentModel = key;
-  apiFetch("/api/v1/models").then(res => res.json()).then(data => {
-    const m = data.models.find(mod => mod.key === key);
+  document.getElementById('topbar-model').textContent = key;
+  apiFetch("/api/v1/models").then(r => r.json()).then(d => {
+    const m = d.models.find(x => x.key === key);
     const c = m?.capabilities || {};
-    const isV = c.vision === true;
+    const isV = c.vision === true, isT = c.trained_for_tool_use === true;
     const isR = key.toLowerCase().includes('r1') || key.toLowerCase().includes('reasoning');
-    const isT = c.trained_for_tool_use === true;
-
-    document.getElementById('active-model-info').innerHTML = `
-      <b style="color:var(--highlight-color)">● ${key}</b>
-      <div class="badge-container" style="margin-top:5px;">
-        <span class="cap-badge">TXT</span>
-        ${isV ? '<span class="cap-badge badge-vis">VIS</span>' : ''}
-        ${isT ? '<span class="cap-badge badge-tool">TOOL</span>' : ''}
-        ${isR ? '<span class="cap-badge badge-rsn">RSN</span>' : ''}
-      </div>
-    `;
-
-    const imgBtn = document.getElementById('imgBtn');
-    imgBtn.disabled = !isV;
-    imgBtn.title = isV ? "이미지 첨부" : "Vision 미지원 모델";
-    if (!isV) clearSelectedImage();
+    document.getElementById('model-info').innerHTML = `
+      <b style="color:var(--green)">● ${key}</b>
+      <div class="badges" style="margin-top:6px">
+        <span class="badge">TXT</span>
+        ${isV ? '<span class="badge bv">VIS</span>' : ''}
+        ${isT ? '<span class="badge bt">TOOL</span>' : ''}
+        ${isR ? '<span class="badge br">RSN</span>' : ''}
+      </div>`;
+    const ib = document.getElementById('imgBtn');
+    ib.disabled = !isV;
+    ib.title = isV ? "이미지 첨부" : "Vision 미지원";
+    if (!isV) clearImg();
   });
 }
 
-function formatContent(text) {
-  if (!text.includes("<think>")) return marked.parse(text);
-  return text.replace(/<think>([\s\S]*?)<\/think>/g, (m, p1) => 
-    `<div class="reasoning-box"><div class="reasoning-header"><i class="fas fa-brain"></i> Thinking Process</div>${marked.parse(p1)}</div>`
-  ).replace(/<think>([\s\S]*)/g, (m, p1) => 
-    `<div class="reasoning-box"><div class="reasoning-header"><i class="fas fa-spinner fa-spin"></i> Reasoning...</div>${marked.parse(p1)}</div>`
-  );
+// ── Render ──
+// 추론창 여닫이: 클릭하면 reasoning-body / toggle 버튼 클래스 토글
+function makeReasoningBlock(reasoningHtml, streaming) {
+  const id = "rsn_" + Date.now() + Math.random().toString(36).slice(2);
+  const icon = streaming ? "fas fa-spinner fa-spin" : "fas fa-brain";
+  return `
+    <div class="reasoning-wrap">
+      <button class="reasoning-toggle" onclick="toggleReasoning('${id}', this)">
+        <i class="${icon}" id="${id}_icon"></i>
+        <span>Thinking Process</span>
+        <i class="fas fa-chevron-down chevron"></i>
+      </button>
+      <div class="reasoning-body" id="${id}">${reasoningHtml}</div>
+    </div>`;
+}
+
+function toggleReasoning(id, btn) {
+  const body = document.getElementById(id);
+  body.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
+function renderBlocks(text, reasoning, streaming = false) {
+  let html = "";
+  if (reasoning) html += makeReasoningBlock(marked.parse(reasoning), streaming);
+  if (text) html += marked.parse(text);
+  return html || "<i class='fas fa-circle-notch fa-spin'></i>";
+}
+
+// ── Auto-scroll: 유저가 위로 스크롤하면 자동 스크롤 멈춤 ──
+let userScrolled = false;
+const chatBox = document.getElementById('chatBox');
+chatBox.addEventListener('scroll', () => {
+  const atBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 60;
+  userScrolled = !atBottom;
+});
+function scrollIfNeeded() {
+  if (!userScrolled) chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ── Send ──
+function buildInput(text, img) {
+  if (img) return [
+    { type: "text", content: text || "이 이미지를 설명해줘." },
+    { type: "image", data_url: img }
+  ];
+  return text;
 }
 
 async function sendMessage() {
   const text = chatInput.value.trim();
-  if ((!text && !selectedImageBase64) || !currentModel || isSending) return;
-  isSending = true; document.getElementById('sendBtn').disabled = true;
+  if ((!text && !imgBase64) || !currentModel || isSending) return;
+
+  isSending = true;
+  document.getElementById('sendBtn').disabled = true;
+  chatInput.value = "";
+  chatInput.style.height = '46px';
+  userScrolled = false; // 새 메시지 보낼 땐 자동 스크롤 재활성
+
   const chat = chats.find(c => c.id === currentChatId);
-  if (chat.messages.length === 0) { chat.title = text ? text.substring(0, 15) : "이미지 분석"; renderChatList(); }
+  if (chat.messages.length === 0) { chat.title = text ? text.slice(0, 18) : "이미지"; renderChatList(); }
 
-  let userContent = selectedImageBase64 ? [
-    { type: "text", text: text || "분석해줘." },
-    { type: "image_url", image_url: { url: selectedImageBase64 } }
-  ] : text;
+  appendMsg("user", text || "[이미지]", imgBase64);
 
-  chat.messages.push({ role: "user", content: userContent });
-  appendToUI("user", text || "[이미지]", selectedImageBase64);
-  clearSelectedImage();
-  const aiDiv = appendToUI("assistant", "...");
-  let fullContent = "";
-  
+  const userContent = imgBase64
+    ? [{ type: "text", text: text || "이 이미지를 설명해줘." }, { type: "image_url", image_url: { url: imgBase64 } }]
+    : text;
+
+  const aiDiv = appendMsg("assistant", "");
+  let fullText = "", fullReasoning = "", newRespId = null;
+
+  // 스트리밍 중 reasoning-body 업데이트용 ID
+  let rsnBodyId = null;
+
   try {
-    const res = await apiFetch("/v1/chat/completions", { 
-      method: "POST", body: JSON.stringify({ model: currentModel, messages: chat.messages, stream: true }) 
-    });
+    const body = { model: currentModel, input: buildInput(text, imgBase64), stream: true, temperature: 0.7, store: true };
+    if (chat.lastResponseId) body.previous_response_id = chat.lastResponseId;
+
+    const res = await apiFetch("/api/v1/chat", { method: "POST", body: JSON.stringify(body) });
+    clearImg();
+
     const reader = res.body.getReader();
-    const decoder = new TextDecoder();
+    const dec = new TextDecoder();
+    let buf = "";
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunks = decoder.decode(value).split("\n");
-      for (const chunk of chunks) {
-        if (chunk.startsWith("data: ") && !chunk.includes("[DONE]")) {
-          try {
-            const data = JSON.parse(chunk.slice(6));
-            fullContent += data.choices[0].delta.content || "";
-            aiDiv.innerHTML = formatContent(fullContent);
-            aiDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
-            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
-          } catch (e) {}
-        }
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();
+
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t || t.startsWith("event:") || !t.startsWith("data:")) continue;
+        const raw = t.slice(5).trim();
+        if (!raw || raw === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(raw);
+          switch (ev.type) {
+            case "reasoning.start":
+              // reasoning 블록 미리 생성 (접힌 상태)
+              rsnBodyId = "rsn_" + Date.now();
+              aiDiv.innerHTML = `
+                <div class="reasoning-wrap">
+                  <button class="reasoning-toggle" onclick="toggleReasoning('${rsnBodyId}', this)">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Thinking Process</span>
+                    <i class="fas fa-chevron-down chevron"></i>
+                  </button>
+                  <div class="reasoning-body" id="${rsnBodyId}"></div>
+                </div>`;
+              break;
+
+            case "reasoning.delta":
+              fullReasoning += ev.content || "";
+              if (rsnBodyId) {
+                const bd = document.getElementById(rsnBodyId);
+                if (bd) bd.innerHTML = marked.parse(fullReasoning);
+              }
+              break;
+
+            case "reasoning.end":
+              // 스피너 → 뇌 아이콘으로 교체
+              if (rsnBodyId) {
+                const toggleBtn = aiDiv.querySelector('.reasoning-toggle');
+                if (toggleBtn) toggleBtn.querySelector('i:first-child').className = 'fas fa-brain';
+              }
+              break;
+
+            case "message.delta":
+              fullText += ev.content || "";
+              // 기존 reasoning 블록 보존 + 텍스트 추가
+              const textPart = document.getElementById('text_part_' + rsnBodyId);
+              if (rsnBodyId) {
+                let tp = aiDiv.querySelector('.msg-text-part');
+                if (!tp) { tp = document.createElement('div'); tp.className = 'msg-text-part'; aiDiv.appendChild(tp); }
+                tp.innerHTML = marked.parse(fullText);
+              } else {
+                aiDiv.innerHTML = marked.parse(fullText);
+              }
+              break;
+
+            case "chat.end":
+              newRespId = ev.result?.response_id || null;
+              break;
+          }
+          aiDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+          scrollIfNeeded();
+        } catch(e) { console.warn("[SSE parse fail]", line); }
       }
     }
-    chat.messages.push({ role: "assistant", content: fullContent });
+
+    // 완료 후 최종 렌더 (hljs 재적용)
+    aiDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    if (newRespId) chat.lastResponseId = newRespId;
+
+    chat.messages.push({ role: "user", content: userContent });
+    chat.messages.push({ role: "assistant", content: fullReasoning ? `<think>${fullReasoning}</think>\n${fullText}` : fullText });
     localStorage.setItem('lm_chats', JSON.stringify(chats));
-  } catch (e) { aiDiv.innerText = "Error: " + e.message; }
-  finally { isSending = false; document.getElementById('sendBtn').disabled = false; }
+
+    console.group(`%c[DEBUG] ${currentModel}`, "color:#10b981;font-weight:bold");
+    console.log("response_id:", newRespId);
+    console.log("reasoning:", fullReasoning);
+    console.log("text:", fullText);
+    console.groupEnd();
+
+  } catch(e) {
+    aiDiv.innerHTML = `<span style="color:#f87171">오류: ${e.message}</span>`;
+    console.error(e);
+  } finally {
+    isSending = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
 }
 
+// ── Chat management ──
 function createNewChat() {
   const id = Date.now().toString();
-  chats.unshift({ id, title: "새 대화", messages: [] });
+  chats.unshift({ id, title: "새 대화", messages: [], lastResponseId: null });
   localStorage.setItem('lm_chats', JSON.stringify(chats));
   selectChat(id);
+  closeSidebar();
 }
-function selectChat(id) { currentChatId = id; localStorage.setItem('lm_current_chat_id', id); renderChatBox(); renderChatList(); }
+function selectChat(id) {
+  currentChatId = id;
+  localStorage.setItem('lm_current_chat_id', id);
+  renderChatBox(); renderChatList();
+}
 function renderChatList() {
   const list = document.getElementById('chat-list'); list.innerHTML = "";
   chats.forEach(c => {
-    const div = document.createElement('div');
-    div.className = `chat-item ${currentChatId === c.id ? 'active' : ''}`;
-    div.onclick = () => selectChat(c.id);
-    div.innerHTML = `<i class="far fa-comment"></i><span style="flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</span><i class="fas fa-times delete-chat" onclick="deleteChat('${c.id}', event)"></i>`;
-    list.appendChild(div);
+    const d = document.createElement('div');
+    d.className = `chat-item ${currentChatId === c.id ? 'active' : ''}`;
+    d.onclick = () => { selectChat(c.id); closeSidebar(); };
+    d.innerHTML = `<i class="far fa-comment" style="opacity:.5"></i><span>${c.title}</span><i class="fas fa-times del-btn" onclick="delChat('${c.id}',event)"></i>`;
+    list.appendChild(d);
   });
 }
-function deleteChat(id, e) { e.stopPropagation(); chats = chats.filter(c => c.id !== id); if (currentChatId === id) currentChatId = chats.length ? chats[0].id : null; localStorage.setItem('lm_chats', JSON.stringify(chats)); renderChatList(); renderChatBox(); }
+function delChat(id, e) {
+  e.stopPropagation();
+  chats = chats.filter(c => c.id !== id);
+  if (currentChatId === id) currentChatId = chats.length ? chats[0].id : null;
+  localStorage.setItem('lm_chats', JSON.stringify(chats));
+  renderChatList(); renderChatBox();
+}
 function renderChatBox() {
-  const box = document.getElementById('chatBox'); box.innerHTML = "";
+  chatBox.innerHTML = "";
   const chat = chats.find(c => c.id === currentChatId);
-  if (chat) chat.messages.forEach(m => {
+  if (!chat) return;
+  chat.messages.forEach(m => {
     if (Array.isArray(m.content)) {
       const txt = m.content.find(i => i.type === 'text')?.text;
-      const img = m.content.find(i => i.type === 'image_url')?.image_url.url;
-      appendToUI(m.role, txt, img);
-    } else appendToUI(m.role, m.content);
+      const img = m.content.find(i => i.type === 'image_url')?.image_url?.url;
+      appendMsg(m.role, txt, img);
+    } else appendMsg(m.role, m.content);
   });
 }
-function appendToUI(role, content, imgData = null) {
-  const box = document.getElementById('chatBox');
+
+function appendMsg(role, content, imgData = null) {
   const div = document.createElement('div');
   div.className = `message ${role}`;
-  if(role === 'user') {
+  if (role === 'user') {
     div.innerText = content;
-    if(imgData) { const img = document.createElement('img'); img.src = imgData; img.className = 'msg-image'; div.appendChild(img); }
-  } else div.innerHTML = formatContent(content);
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
+    if (imgData) { const img = document.createElement('img'); img.src = imgData; img.className = 'msg-image'; div.appendChild(img); }
+  } else {
+    if (!content) {
+      // 빈 상태 (스트리밍 시작 전)
+    } else if (content.includes('<think>')) {
+      const m = content.match(/<think>([\s\S]*?)<\/think>/);
+      const txt = content.replace(/<think>[\s\S]*?<\/think>\n?/, '').trim();
+      div.innerHTML = renderBlocks(txt, m?.[1], false);
+    } else {
+      div.innerHTML = marked.parse(content);
+    }
+    div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+  }
+  chatBox.appendChild(div);
+  scrollIfNeeded();
   return div;
 }
 
-chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-chatInput.addEventListener('input', function() { this.style.height = '48px'; this.style.height = (this.scrollHeight) + 'px'; });
+// ── Input auto-resize ──
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    // IME 조합 중(한글 등)이면 무시 — 조합 완료 후 keydown이 다시 발생함
+    if (e.isComposing || e.keyCode === 229) return;
+    sendMessage();
+  }
+});
+chatInput.addEventListener('input', function() {
+  this.style.height = '46px';
+  this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+});
 
-apiFetch("/api/v1/models").then(res => res.json()).then(data => {
-  const loaded = data.models.find(m => m.loaded_instances.length > 0);
-  if(loaded) syncModelUI(loaded.key);
-}).catch(() => document.getElementById('active-model-info').innerText = "LM Studio 오프라인");
+// ── Init ──
+apiFetch("/api/v1/models").then(r => r.json()).then(d => {
+  const loaded = d.models.find(m => m.loaded_instances?.length > 0);
+  if (loaded) syncModelUI(loaded.key);
+}).catch(() => { document.getElementById('model-info').innerHTML = "<span style='color:#f87171'>● 오프라인</span>"; });
 
-if (chats.length === 0) createNewChat(); else selectChat(currentChatId || chats[0].id);
+if (chats.length === 0) createNewChat();
+else selectChat(currentChatId || chats[0].id);
 </script>
 </body>
 </html>
