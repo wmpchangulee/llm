@@ -10,134 +10,192 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
-      --bg: #0f1117; --sidebar-bg: #1a1d27; --card-bg: #252936;
-      --accent: #3b82f6; --green: #10b981; --amber: #f59e0b; --purple: #8b5cf6;
-      --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
-      --user-bg: #3b82f6; --ai-bg: #334155;
-      --sidebar-w: 300px;
+      --bg:#0f1117;--sidebar-bg:#1a1d27;--card-bg:#252936;
+      --accent:#3b82f6;--green:#10b981;--amber:#f59e0b;--purple:#8b5cf6;
+      --text:#e2e8f0;--muted:#94a3b8;--border:#334155;
+      --user-bg:#3b82f6;--ai-bg:#334155;--sidebar-w:300px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100dvh; overflow: hidden; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100dvh;overflow:hidden;}
 
-    /* ── Sidebar ── */
-    #sidebar {
-      width: var(--sidebar-w); background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex; flex-direction: column;
-      transition: transform .25s ease;
-      position: relative; z-index: 10;
+    /* Sidebar */
+    #sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform .25s ease;position:relative;z-index:10;}
+    #sidebar.hidden{transform:translateX(-100%);position:fixed;height:100dvh;}
+    .sidebar-head{padding:16px;border-bottom:1px solid var(--border);}
+    .model-box{background:var(--card-bg);border-radius:10px;padding:12px;margin-top:10px;border:1px solid var(--border);font-size:.83rem;}
+    #chat-list-wrap{flex:1;overflow-y:auto;padding:8px;}
+    .new-chat-btn{width:100%;background:#ffffff12;color:var(--text);border:none;border-radius:8px;padding:11px;cursor:pointer;margin-bottom:12px;font-size:.9rem;}
+    .new-chat-btn:hover{background:#ffffff20;}
+    .chat-item{padding:11px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:9px;font-size:.88rem;border:1px solid transparent;margin-bottom:4px;}
+    .chat-item:hover{background:#ffffff08;}
+    .chat-item.active{background:var(--card-bg);border-color:var(--accent);}
+    .chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .del-btn{opacity:0;cursor:pointer;color:var(--muted);font-size:.8rem;}
+    .chat-item:hover .del-btn{opacity:1;}
+    .del-btn:hover{color:#f87171;}
+
+    #overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;}
+    #overlay.show{display:block;}
+
+    /* Main */
+    #main{flex:1;display:flex;flex-direction:column;min-width:0;}
+    #topbar{display:none;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--sidebar-bg);}
+    #topbar button{background:none;border:none;color:var(--text);font-size:1.1rem;cursor:pointer;}
+    #topbar .model-tag{font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+
+    /* Chat */
+    #chatBox{flex:1;padding:24px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;}
+    @media(min-width:640px){#chatBox{padding:28px 32px;}}
+    .message{max-width:min(85%,720px);padding:13px 16px;border-radius:14px;line-height:1.65;word-break:break-word;}
+    .user{align-self:flex-end;background:var(--user-bg);border-bottom-right-radius:3px;color:#fff;}
+    .assistant{align-self:flex-start;background:var(--ai-bg);border-bottom-left-radius:3px;}
+    .msg-image{max-width:100%;max-height:260px;border-radius:8px;margin-top:10px;display:block;border:1px solid #ffffff18;}
+
+    /* Reasoning */
+    .reasoning-wrap{margin-bottom:12px;}
+    .reasoning-toggle{display:flex;align-items:center;gap:7px;font-size:.75rem;font-weight:700;color:var(--amber);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:6px;cursor:pointer;padding:6px 10px;width:100%;letter-spacing:.03em;}
+    .reasoning-toggle:hover{background:rgba(245,158,11,.14);}
+    .reasoning-toggle .chevron{transition:transform .2s;font-size:.7rem;margin-left:auto;}
+    .reasoning-toggle.open .chevron{transform:rotate(180deg);}
+    .reasoning-body{background:rgba(0,0,0,.25);border:1px solid rgba(245,158,11,.2);border-top:none;border-radius:0 0 6px 6px;padding:0 14px;font-size:.88rem;color:var(--muted);max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;}
+    .reasoning-body.open{max-height:2000px;padding:12px 14px;}
+    .reasoning-body ol,.reasoning-body ul{padding-left:1.5em;margin:6px 0;}
+    .reasoning-body li{margin:3px 0;}
+    .reasoning-body p{margin:5px 0;}
+    .message ol,.message ul{padding-left:1.5em;margin:6px 0;}
+    .message li{margin:3px 0;}
+    .message p{margin:5px 0;}
+
+    /* Input */
+    .input-wrap{padding:12px 16px;border-top:1px solid var(--border);background:var(--bg);}
+    @media(min-width:640px){.input-wrap{padding:14px 32px;}}
+    #img-preview{display:none;position:relative;width:fit-content;margin-bottom:8px;}
+    #img-preview img{height:70px;border-radius:6px;border:1px dashed var(--accent);}
+    #img-preview button{position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:.75rem;line-height:20px;text-align:center;}
+    .input-row{display:flex;gap:8px;align-items:flex-end;max-width:760px;margin:0 auto;}
+    #chatInput{flex:1;background:var(--card-bg);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:10px;outline:none;resize:none;min-height:46px;max-height:180px;font-family:inherit;font-size:.95rem;}
+    #chatInput:focus{border-color:var(--accent);}
+    .ibtn{background:var(--card-bg);border:1px solid var(--border);color:var(--muted);width:46px;height:46px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .ibtn:hover:not(:disabled){color:var(--text);border-color:var(--accent);}
+    .ibtn:disabled{opacity:.4;cursor:not-allowed;}
+    #sendBtn{background:var(--accent);border:none;color:#fff;width:46px;height:46px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    #sendBtn:disabled{opacity:.45;cursor:not-allowed;}
+
+    /* Badges */
+    .badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+    .badge{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;color:#fff;background:#555;text-transform:uppercase;}
+    .bv{background:var(--accent);}.br{background:var(--amber);}.bt{background:var(--purple);}.bl{background:var(--green);}
+
+    /* Modal */
+    #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;justify-content:center;align-items:center;padding:16px;}
+    #modal.show{display:flex;}
+    .modal-box{background:var(--sidebar-bg);padding:22px;border-radius:14px;width:100%;max-width:560px;max-height:88dvh;overflow-y:auto;border:1px solid var(--border);}
+    .model-item{background:var(--card-bg);padding:14px;border-radius:10px;margin-bottom:9px;border:2px solid transparent;cursor:pointer;}
+    .model-item:hover{border-color:#444;}
+    .model-item.active{border-color:var(--green);}
+
+    /* Modal tabs */
+    .modal-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--card-bg);border-radius:10px;padding:4px;}
+    .modal-tab{flex:1;padding:9px 0;text-align:center;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;background:transparent;color:var(--muted);transition:all .2s;}
+    .modal-tab:hover{color:var(--text);}
+    .modal-tab.active{background:var(--accent);color:#fff;}
+    .tab-pane{display:none;}
+    .tab-pane.active{display:block;}
+
+    /* Search toolbar */
+    .search-toolbar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+    .dl-search-input{flex:1;min-width:160px;background:var(--card-bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;outline:none;font-size:.88rem;}
+    .dl-search-input:focus{border-color:var(--accent);}
+    .dl-search-input::placeholder{color:var(--muted);}
+    .sort-select{background:var(--card-bg);border:1px solid var(--border);color:var(--text);padding:10px 10px;border-radius:8px;outline:none;font-size:.82rem;cursor:pointer;flex-shrink:0;}
+    .sort-select:focus{border-color:var(--accent);}
+    .dl-search-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 16px;cursor:pointer;font-size:.85rem;font-weight:600;white-space:nowrap;height:42px;}
+    .dl-search-btn:hover{filter:brightness(1.15);}
+    .dl-search-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+    /* Download item */
+    .dl-item{background:var(--card-bg);padding:14px;border-radius:10px;margin-bottom:9px;border:1px solid var(--border);}
+    .dl-item-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
+    .dl-item-name{font-weight:700;font-size:.9rem;word-break:break-all;}
+    .dl-item-meta{font-size:.73rem;color:var(--muted);margin-top:3px;}
+    .dl-btn{background:var(--green);color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:.78rem;font-weight:700;white-space:nowrap;flex-shrink:0;}
+    .dl-btn:hover{filter:brightness(1.15);}
+    .dl-btn.cancel{background:#ef4444;}
+    .dl-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+    /* Quant file list */
+    .quant-section{margin-top:6px;}
+    .quant-section-title{font-size:.7rem;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;}
+    .quant-file-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:7px;margin-bottom:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);transition:background .15s;}
+    .quant-file-row:hover{background:rgba(255,255,255,.08);}
+    .quant-file-info{flex:1;min-width:0;}
+    .quant-file-name{font-size:.78rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .quant-file-size{font-size:.7rem;color:var(--muted);margin-top:1px;}
+
+    /* Progress bar */
+    .dl-progress-wrap{margin-top:10px;}
+    .dl-progress-bar{height:6px;background:#ffffff12;border-radius:3px;overflow:hidden;}
+    .dl-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width .4s ease;width:0%;}
+    .dl-progress-text{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:5px;}
+
+    /* Pagination */
+    .pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;padding-bottom:4px;}
+    .page-btn{background:var(--card-bg);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:7px;cursor:pointer;font-size:.82rem;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+    .page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+    .page-btn:disabled{opacity:.35;cursor:not-allowed;}
+    .page-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .page-info{font-size:.78rem;color:var(--muted);padding:0 4px;}
+
+    /* ── 대화 로그 패널 ── */
+    #log-panel{
+      position:fixed;right:0;top:0;bottom:0;width:320px;
+      background:var(--sidebar-bg);border-left:1px solid var(--border);
+      display:flex;flex-direction:column;z-index:50;
+      transform:translateX(100%);transition:transform .25s ease;
     }
-    #sidebar.hidden { transform: translateX(-100%); position: fixed; height: 100dvh; }
-    .sidebar-head { padding: 16px; border-bottom: 1px solid var(--border); }
-    .model-box { background: var(--card-bg); border-radius: 10px; padding: 12px; margin-top: 10px; border: 1px solid var(--border); font-size: .83rem; }
-    #chat-list-wrap { flex: 1; overflow-y: auto; padding: 8px; }
-    .new-chat-btn { width: 100%; background: #ffffff12; color: var(--text); border: none; border-radius: 8px; padding: 11px; cursor: pointer; margin-bottom: 12px; font-size: .9rem; }
-    .new-chat-btn:hover { background: #ffffff20; }
-    .chat-item { padding: 11px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 9px; font-size: .88rem; border: 1px solid transparent; margin-bottom: 4px; }
-    .chat-item:hover { background: #ffffff08; }
-    .chat-item.active { background: var(--card-bg); border-color: var(--accent); }
-    .chat-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .del-btn { opacity: 0; cursor: pointer; color: var(--muted); font-size: .8rem; }
-    .chat-item:hover .del-btn { opacity: 1; }
-    .del-btn:hover { color: #f87171; }
+    #log-panel.open{transform:translateX(0);}
+    .log-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .log-head h4{font-size:.9rem;font-weight:700;}
+    .log-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;}
+    .log-close:hover{color:var(--text);}
+    #log-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;font-size:.75rem;font-family:monospace;}
+    .log-entry{padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.04);border-left:3px solid var(--border);word-break:break-all;line-height:1.5;}
+    .log-entry.info{border-color:var(--accent);}
+    .log-entry.send{border-color:var(--green);}
+    .log-entry.recv{border-color:var(--purple);}
+    .log-entry.error{border-color:#ef4444;color:#fca5a5;}
+    .log-entry.warn{border-color:var(--amber);color:#fde68a;}
+    .log-time{color:var(--muted);margin-right:6px;}
+    .log-clear-btn{margin:8px 10px 10px;background:#ffffff10;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px;cursor:pointer;font-size:.78rem;text-align:center;}
+    .log-clear-btn:hover{background:#ffffff18;color:var(--text);}
 
-    /* ── Overlay (mobile sidebar backdrop) ── */
-    #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 9; }
-    #overlay.show { display: block; }
-
-    /* ── Main ── */
-    #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-
-    /* ── Top bar (mobile) ── */
-    #topbar {
-      display: none; align-items: center; gap: 12px;
-      padding: 12px 16px; border-bottom: 1px solid var(--border);
-      background: var(--sidebar-bg);
+    /* 로그 토글 버튼 */
+    #log-toggle{
+      position:fixed;right:16px;bottom:80px;
+      background:var(--card-bg);border:1px solid var(--border);
+      color:var(--muted);width:40px;height:40px;border-radius:10px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      z-index:49;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.4);
     }
-    #topbar button { background: none; border: none; color: var(--text); font-size: 1.1rem; cursor: pointer; }
-    #topbar .model-tag { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-
-    /* ── Chat box ── */
-    #chatBox { flex: 1; padding: 24px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
-    @media (min-width: 640px) { #chatBox { padding: 28px 32px; } }
-
-    .message { max-width: min(85%, 720px); padding: 13px 16px; border-radius: 14px; line-height: 1.65; word-break: break-word; }
-    .user { align-self: flex-end; background: var(--user-bg); border-bottom-right-radius: 3px; color: #fff; }
-    .assistant { align-self: flex-start; background: var(--ai-bg); border-bottom-left-radius: 3px; }
-    .msg-image { max-width: 100%; max-height: 260px; border-radius: 8px; margin-top: 10px; display: block; border: 1px solid #ffffff18; }
-
-    /* ── Reasoning box (collapsible) ── */
-    .reasoning-wrap { margin-bottom: 12px; }
-    .reasoning-toggle {
-      display: flex; align-items: center; gap: 7px;
-      font-size: .75rem; font-weight: 700; color: var(--amber);
-      background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.25);
-      border-radius: 6px; cursor: pointer; padding: 6px 10px; width: 100%;
-      letter-spacing: .03em;
+    #log-toggle:hover{border-color:var(--accent);color:var(--accent);}
+    #log-toggle .log-dot{
+      position:absolute;top:6px;right:6px;width:7px;height:7px;
+      border-radius:50%;background:var(--green);display:none;
     }
-    .reasoning-toggle:hover { background: rgba(245,158,11,.14); }
-    .reasoning-toggle .chevron { transition: transform .2s; font-size: .7rem; margin-left: auto; }
-    .reasoning-toggle.open .chevron { transform: rotate(180deg); }
-    .reasoning-body {
-      background: rgba(0,0,0,.25);
-      border: 1px solid rgba(245,158,11,.2);
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      padding: 0 14px;
-      font-size: .88rem; color: var(--muted);
-      max-height: 0; overflow: hidden;
-      transition: max-height .35s ease, padding .35s ease;
-    }
-    .reasoning-body.open { max-height: 2000px; padding: 12px 14px; }
-    .reasoning-body ol, .reasoning-body ul { padding-left: 1.5em; margin: 6px 0; }
-    .reasoning-body li { margin: 3px 0; }
-    .reasoning-body p { margin: 5px 0; }
-    /* 일반 메시지 영역도 동일하게 */
-    .message ol, .message ul { padding-left: 1.5em; margin: 6px 0; }
-    .message li { margin: 3px 0; }
-    .message p { margin: 5px 0; }
+    #log-toggle .log-dot.active{display:block;}
 
-    /* ── Input area ── */
-    .input-wrap { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); }
-    @media (min-width: 640px) { .input-wrap { padding: 14px 32px; } }
-    #img-preview { display: none; position: relative; width: fit-content; margin-bottom: 8px; }
-    #img-preview img { height: 70px; border-radius: 6px; border: 1px dashed var(--accent); }
-    #img-preview button { position: absolute; top: -8px; right: -8px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: .75rem; line-height: 20px; text-align: center; }
-    .input-row { display: flex; gap: 8px; align-items: flex-end; max-width: 760px; margin: 0 auto; }
-    #chatInput { flex: 1; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 11px 14px; border-radius: 10px; outline: none; resize: none; min-height: 46px; max-height: 180px; font-family: inherit; font-size: .95rem; }
-    #chatInput:focus { border-color: var(--accent); }
-    .ibtn { background: var(--card-bg); border: 1px solid var(--border); color: var(--muted); width: 46px; height: 46px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .ibtn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
-    .ibtn:disabled { opacity: .4; cursor: not-allowed; }
-    #sendBtn { background: var(--accent); border: none; color: #fff; width: 46px; height: 46px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    #sendBtn:disabled { opacity: .45; cursor: not-allowed; }
-
-    /* ── Badges ── */
-    .badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-    .badge { font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: 700; color: #fff; background: #555; text-transform: uppercase; }
-    .bv { background: var(--accent); } .br { background: var(--amber); }
-    .bt { background: var(--purple); } .bl { background: var(--green); }
-
-    /* ── Modal ── */
-    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
-    #modal.show { display: flex; }
-    .modal-box { background: var(--sidebar-bg); padding: 22px; border-radius: 14px; width: 100%; max-width: 480px; max-height: 82dvh; overflow-y: auto; border: 1px solid var(--border); }
-    .model-item { background: var(--card-bg); padding: 14px; border-radius: 10px; margin-bottom: 9px; border: 2px solid transparent; cursor: pointer; }
-    .model-item:hover { border-color: #444; }
-    .model-item.active { border-color: var(--green); }
-
-    /* ── Responsive: mobile sidebar ── */
-    @media (max-width: 639px) {
-      #sidebar { position: fixed; height: 100dvh; transform: translateX(-100%); }
-      #sidebar.show { transform: translateX(0); }
-      #topbar { display: flex; }
-      #main { width: 100%; }
+    @media(max-width:639px){
+      #sidebar{position:fixed;height:100dvh;transform:translateX(-100%);}
+      #sidebar.show{transform:translateX(0);}
+      #topbar{display:flex;}
+      #main{width:100%;}
+      #log-panel{width:100%;}
+      #log-toggle{bottom:76px;right:10px;}
     }
   </style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <div id="sidebar">
   <div class="sidebar-head">
     <div style="font-size:.7rem;color:var(--muted);font-weight:700;letter-spacing:1px">SYSTEM STATUS</div>
@@ -151,17 +209,13 @@
 </div>
 <div id="overlay" onclick="closeSidebar()"></div>
 
-<!-- Main -->
 <div id="main">
-  <!-- Mobile topbar -->
   <div id="topbar">
     <button onclick="openSidebar()"><i class="fas fa-bars"></i></button>
     <span class="model-tag" id="topbar-model">모델 미선택</span>
     <button onclick="openModal()" style="font-size:.85rem;color:var(--muted)"><i class="fas fa-layer-group"></i></button>
   </div>
-
   <div id="chatBox"></div>
-
   <div class="input-wrap">
     <div id="img-preview">
       <img id="img-thumb" src="">
@@ -178,11 +232,57 @@
   </div>
 </div>
 
-<!-- Model Modal -->
+<!-- 로그 토글 버튼 -->
+<button id="log-toggle" onclick="toggleLogPanel()" title="대화 로그">
+  <i class="fas fa-terminal"></i>
+  <span class="log-dot" id="log-dot"></span>
+</button>
+
+<!-- 로그 패널 -->
+<div id="log-panel">
+  <div class="log-head">
+    <h4><i class="fas fa-terminal" style="margin-right:6px;color:var(--accent)"></i>대화 로그</h4>
+    <button class="log-close" onclick="toggleLogPanel()"><i class="fas fa-times"></i></button>
+  </div>
+  <div id="log-body"></div>
+  <button class="log-clear-btn" onclick="clearLog()"><i class="fas fa-trash-alt" style="margin-right:5px"></i>로그 지우기</button>
+</div>
+
+<!-- Modal -->
 <div id="modal">
   <div class="modal-box">
-    <h3 style="margin-bottom:16px">모델 라이브러리</h3>
-    <div id="modal-list"></div>
+    <h3 style="margin-bottom:12px">모델 라이브러리</h3>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('local')">내 모델</button>
+      <button class="modal-tab" onclick="switchTab('download')">다운로드</button>
+    </div>
+
+    <div id="tab-local" class="tab-pane active">
+      <div id="modal-list"></div>
+    </div>
+
+    <div id="tab-download" class="tab-pane">
+      <!-- 검색 툴바 -->
+      <div class="search-toolbar">
+        <input class="dl-search-input" id="dlSearchInput" placeholder="모델 검색 (예: llama, qwen ...)" onkeydown="if(event.key==='Enter')doSearch()">
+        <select class="sort-select" id="sortSelect">
+          <option value="downloads">다운로드순</option>
+          <option value="likes">좋아요순</option>
+          <option value="lastModified">최근 수정순</option>
+          <option value="trending">트렌딩</option>
+          <option value="created">최신 등록순</option>
+        </select>
+        <button class="dl-search-btn" id="dlSearchBtn" onclick="doSearch()"><i class="fas fa-search"></i></button>
+      </div>
+      <div id="dl-active-downloads"></div>
+      <div id="dl-search-results">
+        <div style="text-align:center;padding:24px;color:var(--muted);font-size:.85rem">
+          <i class="fas fa-search" style="font-size:1.5rem;opacity:.3;display:block;margin-bottom:8px"></i>
+          Hugging Face에서 GGUF 모델을 검색합니다
+        </div>
+      </div>
+    </div>
+
     <button class="new-chat-btn" style="margin-top:10px" onclick="closeModal()">닫기</button>
   </div>
 </div>
@@ -193,44 +293,71 @@ let currentModel = null, isSending = false, imgBase64 = null;
 let chats = JSON.parse(localStorage.getItem('lm_chats') || '[]');
 let currentChatId = localStorage.getItem('lm_current_chat_id');
 
-marked.setOptions({ breaks: true, gfm: true });
+// ── 검색 상태 ──
+const SEARCH_PAGE_SIZE = 10; // HF API 한 번에 가져올 개수
+let searchState = { query:'', sort:'downloads', page:0, totalFetched:0, hasMore:true, allResults:[] };
+
+marked.setOptions({ breaks:true, gfm:true });
 
 // ── API ──
-async function apiFetch(ep, opts = {}) {
+async function apiFetch(ep, opts={}) {
   const res = await fetch(BASE_URL + ep, {
     ...opts,
-    headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true", ...(opts.headers || {}) }
+    headers:{ "Content-Type":"application/json","ngrok-skip-browser-warning":"true",...(opts.headers||{}) }
   });
-  if (!res.ok) { const t = await res.text().catch(() => ""); throw new Error(`HTTP ${res.status}: ${t}`); }
+  if (!res.ok) { const t = await res.text().catch(()=>""); throw new Error(`HTTP ${res.status}: ${t}`); }
   return res;
 }
 
-// ── Sidebar (mobile) ──
-function openSidebar() {
-  document.getElementById('sidebar').classList.add('show');
-  document.getElementById('overlay').classList.add('show');
+// ── 로그 시스템 ──
+let logUnread = 0;
+function log(msg, type='info') {
+  const body = document.getElementById('log-body');
+  const now = new Date();
+  const ts = now.toTimeString().slice(0,8);
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.innerHTML = `<span class="log-time">[${ts}]</span>${escHtml(String(msg))}`;
+  body.appendChild(entry);
+  body.scrollTop = body.scrollHeight;
+  // 패널 닫혀있으면 dot 표시
+  if (!document.getElementById('log-panel').classList.contains('open')) {
+    logUnread++;
+    document.getElementById('log-dot').classList.add('active');
+  }
 }
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('show');
-  document.getElementById('overlay').classList.remove('show');
+function logJson(label, obj, type='info') {
+  log(`${label} ${JSON.stringify(obj)}`, type);
 }
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function clearLog() {
+  document.getElementById('log-body').innerHTML = '';
+  logUnread = 0;
+}
+function toggleLogPanel() {
+  const p = document.getElementById('log-panel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) {
+    logUnread = 0;
+    document.getElementById('log-dot').classList.remove('active');
+    document.getElementById('log-body').scrollTop = document.getElementById('log-body').scrollHeight;
+  }
+}
+
+// ── Sidebar ──
+function openSidebar() { document.getElementById('sidebar').classList.add('show'); document.getElementById('overlay').classList.add('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('show'); document.getElementById('overlay').classList.remove('show'); }
 
 // ── Image ──
 function handleFile(e) {
-  const f = e.target.files[0]; if (!f) return;
+  const f = e.target.files[0]; if(!f) return;
   const r = new FileReader();
-  r.onload = ev => {
-    imgBase64 = ev.target.result;
-    document.getElementById('img-thumb').src = imgBase64;
-    document.getElementById('img-preview').style.display = 'block';
-  };
+  r.onload = ev => { imgBase64=ev.target.result; document.getElementById('img-thumb').src=imgBase64; document.getElementById('img-preview').style.display='block'; };
   r.readAsDataURL(f);
 }
-function clearImg() {
-  imgBase64 = null;
-  document.getElementById('fileInput').value = "";
-  document.getElementById('img-preview').style.display = 'none';
-}
+function clearImg() { imgBase64=null; document.getElementById('fileInput').value=""; document.getElementById('img-preview').style.display='none'; }
 
 // ── Modal ──
 async function openModal() {
@@ -238,26 +365,27 @@ async function openModal() {
   const list = document.getElementById('modal-list');
   list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-circle-notch fa-spin'></i></div>";
   try {
-    const data = await apiFetch("/api/v1/models").then(r => r.json());
+    const data = await apiFetch("/api/v1/models").then(r=>r.json());
     list.innerHTML = "";
     data.models.forEach(m => {
       const loaded = m.loaded_instances?.length > 0;
-      const isV = m.capabilities?.vision === true;
-      const isT = m.capabilities?.trained_for_tool_use === true;
-      const isR = m.key.toLowerCase().includes('r1') || m.key.toLowerCase().includes('reasoning');
+      const isV = m.capabilities?.vision===true, isT = m.capabilities?.trained_for_tool_use===true;
+      const isR = m.key.toLowerCase().includes('r1')||m.key.toLowerCase().includes('reasoning');
       const d = document.createElement('div');
-      d.className = `model-item ${currentModel === m.key ? 'active' : ''}`;
+      d.className = `model-item ${currentModel===m.key?'active':''}`;
       d.onclick = () => switchModel(m.key);
       d.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <b>${m.display_name || m.id}</b>
-          ${loaded ? '<span class="badge bl">LOADED</span>' : ''}
+          <div style="display:flex;align-items:center;gap:6px">
+            <b>${m.display_name||m.id}</b>
+            ${loaded?'<span class="badge bl">LOADED</span>':''}
+          </div>
         </div>
         <div class="badges">
           <span class="badge">TXT</span>
-          ${isV ? '<span class="badge bv">VIS</span>' : ''}
-          ${isT ? '<span class="badge bt">TOOL</span>' : ''}
-          ${isR ? '<span class="badge br">RSN</span>' : ''}
+          ${isV?'<span class="badge bv">VIS</span>':''}
+          ${isT?'<span class="badge bt">TOOL</span>':''}
+          ${isR?'<span class="badge br">RSN</span>':''}
         </div>
         <div style="margin-top:5px;font-size:.73rem;color:var(--muted)">${m.key}</div>`;
       list.appendChild(d);
@@ -265,309 +393,554 @@ async function openModal() {
   } catch(e) { list.innerHTML = `<div style='color:#f87171'>연결 실패: ${e.message}</div>`; }
 }
 function closeModal() { document.getElementById('modal').classList.remove('show'); }
+function switchTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach((b,i) => b.classList.toggle('active', tab==='local'?i===0:i===1));
+  document.getElementById('tab-local').classList.toggle('active', tab==='local');
+  document.getElementById('tab-download').classList.toggle('active', tab==='download');
+}
 
+// ── 유틸 ──
+function formatNumber(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
+function formatBytes(b) { if(!b||b<=0) return '?'; const u=['B','KB','MB','GB','TB']; const i=Math.floor(Math.log(b)/Math.log(1024)); return (b/Math.pow(1024,i)).toFixed(i>1?2:0)+' '+u[i]; }
+function fmtDate(iso) { if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'}); }
+
+// ── 검색 ──
+// HF API 정렬 파라미터 매핑
+const SORT_MAP = { downloads:'downloads', likes:'likes', lastModified:'lastModified', trending:'trending', created:'createdAt' };
+
+function doSearch() {
+  const q = document.getElementById('dlSearchInput').value.trim();
+  if (!q) return;
+  const sort = document.getElementById('sortSelect').value;
+  // 새 검색이면 상태 초기화
+  searchState = { query:q, sort, page:0, totalFetched:0, hasMore:true, allResults:[] };
+  fetchSearchPage(true);
+}
+
+async function fetchSearchPage(reset=false) {
+  const { query, sort, page } = searchState;
+  const results = document.getElementById('dl-search-results');
+  const btn = document.getElementById('dlSearchBtn');
+  btn.disabled = true;
+
+  if (reset) {
+    results.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-circle-notch fa-spin'></i> 검색 중...</div>";
+  }
+
+  // HF API: limit=10, offset=page*10
+  const offset = page * SEARCH_PAGE_SIZE;
+  const sortParam = SORT_MAP[sort] || 'downloads';
+  const dir = (sort === 'created' || sort === 'lastModified') ? -1 : -1;
+  const url = `https://huggingface.co/api/models?search=${encodeURIComponent(query)}&filter=gguf&sort=${sortParam}&direction=${dir}&limit=${SEARCH_PAGE_SIZE}&skip=${offset}`;
+
+  try {
+    const res = await fetch(url, { headers:{ "Accept":"application/json" } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // 결과가 SEARCH_PAGE_SIZE보다 적으면 마지막 페이지
+    searchState.hasMore = data.length === SEARCH_PAGE_SIZE;
+    searchState.totalFetched = offset + data.length;
+
+    // 각 모델 파일 목록 병렬 조회
+    const detailed = await Promise.all(data.map(async m => {
+      try {
+        const r = await fetch(`https://huggingface.co/api/models/${m.id}?blobs=true`, { headers:{ "Accept":"application/json" } });
+        if (!r.ok) return { ...m, ggufFiles:[] };
+        const info = await r.json();
+        const ggufFiles = (info.siblings||[])
+          .filter(f=>f.rfilename.endsWith('.gguf'))
+          .map(f=>({ name:f.rfilename, size:f.size||f.blob?.size||0 }));
+        return { ...m, ggufFiles };
+      } catch { return { ...m, ggufFiles:[] }; }
+    }));
+
+    searchState.allResults = detailed;
+    renderSearchResults(detailed, reset);
+  } catch(e) {
+    results.innerHTML = `<div style='color:#f87171;padding:12px'>검색 실패: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSearchResults(models, reset) {
+  const results = document.getElementById('dl-search-results');
+  if (reset) results.innerHTML = "";
+
+  if (!models.length) {
+    results.innerHTML = "<div style='text-align:center;padding:20px;color:var(--muted)'>검색 결과가 없습니다</div>";
+    return;
+  }
+
+  // 기존 pagination 제거
+  const oldPager = results.querySelector('.pagination');
+  if (oldPager) oldPager.remove();
+
+  models.forEach(model => {
+    const dlCount = model.downloads ? formatNumber(model.downloads) : '-';
+    const likes = model.likes ?? 0;
+    const lastMod = model.lastModified ? fmtDate(model.lastModified) : '';
+    const ggufFiles = model.ggufFiles || [];
+
+    let filesHtml = '';
+    if (ggufFiles.length === 0) {
+      filesHtml = `<div style="font-size:.75rem;color:var(--muted);padding:5px 0"><i class="fas fa-exclamation-triangle" style="margin-right:4px"></i>GGUF 파일 없음</div>`;
+    } else {
+      filesHtml = `<div class="quant-section"><div class="quant-section-title"><i class="fas fa-file-code" style="margin-right:4px"></i>파일 선택</div>`;
+      ggufFiles.forEach(f => {
+        const qm = f.name.match(/[_\-](Q\d[_\w]*|[Ff]16|[Ff]32|BF16)(?:[_\-.]|$)/i);
+        const qt = qm ? qm[1].toUpperCase() : null;
+        const dlId = `${model.id}::${f.name}`;
+        const isActive = activeDownloads.has(dlId);
+        filesHtml += `
+          <div class="quant-file-row">
+            <div class="quant-file-info">
+              <div class="quant-file-name" title="${f.name}">${f.name}</div>
+              <div class="quant-file-size">${formatBytes(f.size)}${qt?' · <b>'+qt+'</b>':''}</div>
+            </div>
+            <button class="dl-btn" id="dlbtn-${CSS.escape(dlId)}"
+              onclick="executeDownload('${model.id}','${f.name}','${qt||''}',this)"
+              ${isActive?'disabled':''}>
+              ${isActive?'<i class="fas fa-spinner fa-spin"></i>':'<i class="fas fa-download"></i>'}
+            </button>
+          </div>`;
+      });
+      filesHtml += `</div>`;
+    }
+
+    const d = document.createElement('div');
+    d.className = 'dl-item';
+    d.innerHTML = `
+      <div class="dl-item-head">
+        <div style="flex:1;min-width:0">
+          <div class="dl-item-name">${model.id}</div>
+          <div class="dl-item-meta">
+            <i class="fas fa-download"></i> ${dlCount} &nbsp;
+            <i class="fas fa-heart"></i> ${likes}
+            ${model.pipeline_tag?' &nbsp;<i class="fas fa-tag"></i> '+model.pipeline_tag:''}
+            ${lastMod?' &nbsp;<i class="fas fa-clock"></i> '+lastMod:''}
+          </div>
+        </div>
+      </div>
+      ${filesHtml}`;
+    results.appendChild(d);
+  });
+
+  // ── 페이지네이션 ──
+  renderPagination(results);
+}
+
+function renderPagination(container) {
+  const { page, hasMore } = searchState;
+  const pager = document.createElement('div');
+  pager.className = 'pagination';
+
+  // 이전 버튼
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'page-btn';
+  prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+  prevBtn.disabled = page === 0;
+  prevBtn.onclick = () => { searchState.page--; fetchSearchPage(true); document.getElementById('tab-download').scrollTop=0; };
+
+  // 페이지 표시
+  const info = document.createElement('span');
+  info.className = 'page-info';
+  info.textContent = `${page + 1} 페이지`;
+
+  // 다음 버튼
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'page-btn';
+  nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+  nextBtn.disabled = !hasMore;
+  nextBtn.onclick = () => { searchState.page++; fetchSearchPage(true); document.getElementById('tab-download').scrollTop=0; };
+
+  pager.appendChild(prevBtn);
+  pager.appendChild(info);
+  pager.appendChild(nextBtn);
+  container.appendChild(pager);
+}
+
+// ── 다운로드 ──
+const activeDownloads = new Map();
+
+async function executeDownload(modelId, filename, quantType, btn) {
+  if (btn === undefined && quantType instanceof HTMLElement) { btn=quantType; quantType=''; }
+  const dlId = `${modelId}::${filename}`;
+  if (activeDownloads.has(dlId)) return;
+
+  log(`[DL] 시작 → ${modelId} / ${filename}`, 'send');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  const dlState = { jobId:null, cancelled:false };
+  activeDownloads.set(dlId, dlState);
+  renderActiveDownloads();
+
+  try {
+    const hfUrl = `https://huggingface.co/${modelId}`;
+    const body = quantType ? { model:hfUrl, quantization:quantType } : { model:hfUrl };
+    logJson('[DL] POST body:', body, 'info');
+
+    const res = await apiFetch("/api/v1/models/download", { method:"POST", body:JSON.stringify(body) });
+    const data = await res.json();
+    logJson('[DL] 응답:', data, 'recv');
+
+    if (data.error) throw new Error(data.error);
+    if (data.status === 'already_downloaded') {
+      log('[DL] 이미 다운로드됨', 'warn');
+      completeDownload(dlId, true, null, '이미 다운로드됨');
+      return;
+    }
+    const jobId = data.job_id;
+    if (!jobId) throw new Error('job_id 없음: ' + JSON.stringify(data));
+    dlState.jobId = jobId;
+    log(`[DL] job_id=${jobId} 폴링 시작`, 'info');
+    await pollDownloadStatus(dlId, jobId, dlState);
+  } catch(e) {
+    if (!dlState.cancelled) {
+      log(`[DL] 오류: ${e.message}`, 'error');
+      completeDownload(dlId, false, e.message);
+    }
+  }
+}
+
+async function pollDownloadStatus(dlId, jobId, dlState) {
+  let lastDl=0, lastTime=Date.now();
+  while (!dlState.cancelled) {
+    await new Promise(r=>setTimeout(r,800));
+    if (dlState.cancelled) break;
+    try {
+      const res = await apiFetch(`/api/v1/models/download/status/${encodeURIComponent(jobId)}`);
+      const ev = await res.json();
+      const now = Date.now();
+      const dl = ev.downloaded_bytes??0, total = ev.total_size_bytes??0;
+      const elapsed = (now-lastTime)/1000;
+      const speed = elapsed>0?(dl-lastDl)/elapsed:0;
+      lastDl=dl; lastTime=now;
+      const pct = total>0?dl/total:0;
+
+      if (ev.status==='downloading') {
+        log(`[DL] ${(pct*100).toFixed(1)}% — ${formatBytes(dl)}/${formatBytes(total)} @ ${formatBytes(speed)}/s`, 'info');
+      }
+      updateActiveDownloadProgress(dlId, { pct, downloaded:dl, total, speed, status:ev.status });
+
+      if (ev.status==='completed') { log('[DL] 완료!', 'send'); completeDownload(dlId, true); return; }
+      if (ev.status==='failed') throw new Error(ev.error||'다운로드 실패');
+    } catch(e) {
+      if (dlState.cancelled) break;
+      log(`[DL] 폴링 오류: ${e.message}`, 'error');
+      completeDownload(dlId, false, e.message); return;
+    }
+  }
+}
+
+function cancelDownload(dlId) {
+  const s = activeDownloads.get(dlId);
+  if (s) { s.cancelled=true; log(`[DL] 취소: ${dlId}`, 'warn'); }
+  completeDownload(dlId, false, '사용자가 취소했습니다');
+}
+
+function completeDownload(dlId, success, errMsg, note) {
+  activeDownloads.delete(dlId);
+  renderActiveDownloads();
+  const btn = document.getElementById('dlbtn-'+CSS.escape(dlId));
+  if (btn) {
+    btn.disabled=false;
+    btn.innerHTML = success ? '<i class="fas fa-check" style="color:#10b981"></i>' : '<i class="fas fa-download"></i>';
+    if (!success && errMsg) btn.title=errMsg;
+  }
+  if (success) appendMsg("assistant", `### ✅ 다운로드 완료\n**${dlId.split('::')[0]}** ${note||'다운로드가 완료되었습니다.'}`);
+  else if (errMsg) {
+    const el = document.getElementById('dlprog-'+CSS.escape(dlId));
+    if (el) {
+      el.querySelector('.dlp-detail').textContent=errMsg;
+      el.querySelector('.dlp-detail').style.color='#f87171';
+      const fill=el.querySelector('.dl-progress-fill');
+      if (fill) fill.style.background='#ef4444';
+    }
+  }
+}
+
+function updateActiveDownloadProgress(dlId, { pct, downloaded, total, speed, status }) {
+  const el = document.getElementById('dlprog-'+CSS.escape(dlId));
+  if (!el) return;
+  const fill=el.querySelector('.dl-progress-fill');
+  const pctEl=el.querySelector('.dlp-pct');
+  const detailEl=el.querySelector('.dlp-detail');
+  if (fill) fill.style.width=(Math.min(pct,1)*100).toFixed(1)+'%';
+  if (pctEl) pctEl.textContent=(Math.min(pct,1)*100).toFixed(1)+'%';
+  if (detailEl) {
+    let txt='';
+    if (total>0) txt+=`${formatBytes(downloaded)} / ${formatBytes(total)}`;
+    if (speed>1024) txt+=` — ${formatBytes(speed)}/s`;
+    if (status) txt+=` (${status})`;
+    detailEl.textContent=txt||'준비 중...';
+  }
+}
+
+function renderActiveDownloads() {
+  const wrap = document.getElementById('dl-active-downloads');
+  if (!wrap) return;
+  if (!activeDownloads.size) { wrap.innerHTML=''; return; }
+  let html='';
+  for (const [dlId] of activeDownloads) {
+    const [modelId,filename] = dlId.split('::');
+    html+=`
+      <div class="dl-item" id="dlprog-${CSS.escape(dlId)}" style="border-color:var(--accent);margin-bottom:10px">
+        <div class="dl-item-head" style="margin-bottom:0">
+          <div style="flex:1;min-width:0">
+            <div class="dl-item-name" style="font-size:.82rem">${modelId}</div>
+            <div class="dl-item-meta">${filename}</div>
+          </div>
+          <button class="dl-btn cancel" onclick="cancelDownload('${dlId}')"><i class="fas fa-times"></i> 취소</button>
+        </div>
+        <div class="dl-progress-wrap">
+          <div class="dl-progress-bar"><div class="dl-progress-fill"></div></div>
+          <div class="dl-progress-text"><span class="dlp-pct">0%</span><span class="dlp-detail">준비 중...</span></div>
+        </div>
+      </div>`;
+  }
+  wrap.innerHTML=html;
+}
+
+// ── Model switch ──
 async function switchModel(key) {
   if (isSending) return;
   const list = document.getElementById('modal-list');
   list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-sync fa-spin'></i> 교체 중...</div>";
+  log(`[MODEL] 교체 → ${key}`, 'info');
   try {
-    const d = await apiFetch("/api/v1/models").then(r => r.json());
+    const d = await apiFetch("/api/v1/models").then(r=>r.json());
     for (const m of d.models)
-      for (const inst of (m.loaded_instances || []))
-        await apiFetch("/api/v1/models/unload", { method: "POST", body: JSON.stringify({ instance_id: inst.id }) });
-    await apiFetch("/api/v1/models/load", { method: "POST", body: JSON.stringify({ model: key }) });
+      for (const inst of (m.loaded_instances||[]))
+        await apiFetch("/api/v1/models/unload",{ method:"POST",body:JSON.stringify({ instance_id:inst.id }) });
+    await apiFetch("/api/v1/models/load",{ method:"POST",body:JSON.stringify({ model:key }) });
     syncModelUI(key); closeModal();
+    log(`[MODEL] 로드 완료: ${key}`, 'send');
     appendMsg("assistant", `### 🆕 모델 교체 완료\n**${key}** 준비됐습니다.`);
-  } catch(e) { alert("오류: " + e.message); openModal(); }
+  } catch(e) { log(`[MODEL] 오류: ${e.message}`,'error'); alert("오류: "+e.message); openModal(); }
 }
 
 function syncModelUI(key) {
-  currentModel = key;
-  document.getElementById('topbar-model').textContent = key;
-  apiFetch("/api/v1/models").then(r => r.json()).then(d => {
-    const m = d.models.find(x => x.key === key);
-    const c = m?.capabilities || {};
-    const isV = c.vision === true, isT = c.trained_for_tool_use === true;
-    const isR = key.toLowerCase().includes('r1') || key.toLowerCase().includes('reasoning');
-    document.getElementById('model-info').innerHTML = `
+  currentModel=key;
+  document.getElementById('topbar-model').textContent=key;
+  apiFetch("/api/v1/models").then(r=>r.json()).then(d=>{
+    const m=d.models.find(x=>x.key===key), c=m?.capabilities||{};
+    const isV=c.vision===true, isT=c.trained_for_tool_use===true;
+    const isR=key.toLowerCase().includes('r1')||key.toLowerCase().includes('reasoning');
+    document.getElementById('model-info').innerHTML=`
       <b style="color:var(--green)">● ${key}</b>
       <div class="badges" style="margin-top:6px">
         <span class="badge">TXT</span>
-        ${isV ? '<span class="badge bv">VIS</span>' : ''}
-        ${isT ? '<span class="badge bt">TOOL</span>' : ''}
-        ${isR ? '<span class="badge br">RSN</span>' : ''}
+        ${isV?'<span class="badge bv">VIS</span>':''}
+        ${isT?'<span class="badge bt">TOOL</span>':''}
+        ${isR?'<span class="badge br">RSN</span>':''}
       </div>`;
-    const ib = document.getElementById('imgBtn');
-    ib.disabled = !isV;
-    ib.title = isV ? "이미지 첨부" : "Vision 미지원";
-    if (!isV) clearImg();
+    const ib=document.getElementById('imgBtn');
+    ib.disabled=!isV; ib.title=isV?"이미지 첨부":"Vision 미지원";
+    if(!isV) clearImg();
   });
 }
 
 // ── Render ──
-// 추론창 여닫이: 클릭하면 reasoning-body / toggle 버튼 클래스 토글
-function makeReasoningBlock(reasoningHtml, streaming) {
-  const id = "rsn_" + Date.now() + Math.random().toString(36).slice(2);
-  const icon = streaming ? "fas fa-spinner fa-spin" : "fas fa-brain";
-  return `
-    <div class="reasoning-wrap">
-      <button class="reasoning-toggle" onclick="toggleReasoning('${id}', this)">
-        <i class="${icon}" id="${id}_icon"></i>
-        <span>Thinking Process</span>
-        <i class="fas fa-chevron-down chevron"></i>
-      </button>
-      <div class="reasoning-body" id="${id}">${reasoningHtml}</div>
-    </div>`;
+function makeReasoningBlock(html, streaming) {
+  const id="rsn_"+Date.now()+Math.random().toString(36).slice(2);
+  return `<div class="reasoning-wrap">
+    <button class="reasoning-toggle" onclick="toggleReasoning('${id}',this)">
+      <i class="${streaming?'fas fa-spinner fa-spin':'fas fa-brain'}"></i>
+      <span>Thinking Process</span>
+      <i class="fas fa-chevron-down chevron"></i>
+    </button>
+    <div class="reasoning-body" id="${id}">${html}</div>
+  </div>`;
+}
+function toggleReasoning(id,btn) { document.getElementById(id).classList.toggle('open'); btn.classList.toggle('open'); }
+function renderBlocks(text,reasoning,streaming=false) {
+  let h="";
+  if(reasoning) h+=makeReasoningBlock(marked.parse(reasoning),streaming);
+  if(text) h+=marked.parse(text);
+  return h||"<i class='fas fa-circle-notch fa-spin'></i>";
 }
 
-function toggleReasoning(id, btn) {
-  const body = document.getElementById(id);
-  body.classList.toggle('open');
-  btn.classList.toggle('open');
-}
-
-function renderBlocks(text, reasoning, streaming = false) {
-  let html = "";
-  if (reasoning) html += makeReasoningBlock(marked.parse(reasoning), streaming);
-  if (text) html += marked.parse(text);
-  return html || "<i class='fas fa-circle-notch fa-spin'></i>";
-}
-
-// ── Auto-scroll: 유저가 위로 스크롤하면 자동 스크롤 멈춤 ──
-let userScrolled = false;
-const chatBox = document.getElementById('chatBox');
-chatBox.addEventListener('scroll', () => {
-  const atBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 60;
-  userScrolled = !atBottom;
-});
-function scrollIfNeeded() {
-  if (!userScrolled) chatBox.scrollTop = chatBox.scrollHeight;
-}
+let userScrolled=false;
+const chatBox=document.getElementById('chatBox');
+chatBox.addEventListener('scroll',()=>{ userScrolled=chatBox.scrollHeight-chatBox.scrollTop-chatBox.clientHeight>60; });
+function scrollIfNeeded() { if(!userScrolled) chatBox.scrollTop=chatBox.scrollHeight; }
 
 // ── Send ──
-function buildInput(text, img) {
-  if (img) return [
-    { type: "text", content: text || "이 이미지를 설명해줘." },
-    { type: "image", data_url: img }
-  ];
+function buildInput(text,img) {
+  if(img) return [{ type:"text",content:text||"이 이미지를 설명해줘." },{ type:"image",data_url:img }];
   return text;
 }
 
 async function sendMessage() {
-  const text = chatInput.value.trim();
-  if ((!text && !imgBase64) || !currentModel || isSending) return;
+  const text=chatInput.value.trim();
+  if((!text&&!imgBase64)||!currentModel||isSending) return;
+  isSending=true;
+  document.getElementById('sendBtn').disabled=true;
+  chatInput.value=""; chatInput.style.height='46px';
+  userScrolled=false;
 
-  isSending = true;
-  document.getElementById('sendBtn').disabled = true;
-  chatInput.value = "";
-  chatInput.style.height = '46px';
-  userScrolled = false; // 새 메시지 보낼 땐 자동 스크롤 재활성
+  const chat=chats.find(c=>c.id===currentChatId);
+  if(chat.messages.length===0){ chat.title=text?text.slice(0,18):"이미지"; renderChatList(); }
 
-  const chat = chats.find(c => c.id === currentChatId);
-  if (chat.messages.length === 0) { chat.title = text ? text.slice(0, 18) : "이미지"; renderChatList(); }
+  appendMsg("user",text||"[이미지]",imgBase64);
 
-  appendMsg("user", text || "[이미지]", imgBase64);
+  const userContent=imgBase64
+    ?[{ type:"text",text:text||"이 이미지를 설명해줘." },{ type:"image_url",image_url:{ url:imgBase64 } }]
+    :text;
 
-  const userContent = imgBase64
-    ? [{ type: "text", text: text || "이 이미지를 설명해줘." }, { type: "image_url", image_url: { url: imgBase64 } }]
-    : text;
+  const aiDiv=appendMsg("assistant","");
+  let fullText="",fullReasoning="",newRespId=null,rsnBodyId=null;
 
-  const aiDiv = appendMsg("assistant", "");
-  let fullText = "", fullReasoning = "", newRespId = null;
-
-  // 스트리밍 중 reasoning-body 업데이트용 ID
-  let rsnBodyId = null;
+  log(`[CHAT] → 모델=${currentModel}`, 'send');
+  log(`[CHAT] 입력: ${(text||'[이미지]').slice(0,80)}${text&&text.length>80?'…':''}`, 'send');
 
   try {
-    const body = { model: currentModel, input: buildInput(text, imgBase64), stream: true, temperature: 0.7, store: true };
-    if (chat.lastResponseId) body.previous_response_id = chat.lastResponseId;
+    const body={ model:currentModel,input:buildInput(text,imgBase64),stream:true,temperature:0.7,store:true };
+    if(chat.lastResponseId) body.previous_response_id=chat.lastResponseId;
 
-    const res = await apiFetch("/api/v1/chat", { method: "POST", body: JSON.stringify(body) });
+    const res=await apiFetch("/api/v1/chat",{ method:"POST",body:JSON.stringify(body) });
     clearImg();
 
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = "";
+    const reader=res.body.getReader(), dec=new TextDecoder();
+    let buf="";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop();
-
-      for (const line of lines) {
-        const t = line.trim();
-        if (!t || t.startsWith("event:") || !t.startsWith("data:")) continue;
-        const raw = t.slice(5).trim();
-        if (!raw || raw === "[DONE]") continue;
+    while(true) {
+      const { done,value }=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{ stream:true });
+      const lines=buf.split("\n"); buf=lines.pop();
+      for(const line of lines) {
+        const t=line.trim();
+        if(!t||t.startsWith("event:")||!t.startsWith("data:")) continue;
+        const raw=t.slice(5).trim();
+        if(!raw||raw==="[DONE]") continue;
         try {
-          const ev = JSON.parse(raw);
-          switch (ev.type) {
+          const ev=JSON.parse(raw);
+          switch(ev.type) {
             case "reasoning.start":
-              // reasoning 블록 미리 생성 (접힌 상태)
-              rsnBodyId = "rsn_" + Date.now();
-              aiDiv.innerHTML = `
-                <div class="reasoning-wrap">
-                  <button class="reasoning-toggle" onclick="toggleReasoning('${rsnBodyId}', this)">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Thinking Process</span>
-                    <i class="fas fa-chevron-down chevron"></i>
-                  </button>
-                  <div class="reasoning-body" id="${rsnBodyId}"></div>
-                </div>`;
+              rsnBodyId="rsn_"+Date.now();
+              aiDiv.innerHTML=`<div class="reasoning-wrap">
+                <button class="reasoning-toggle" onclick="toggleReasoning('${rsnBodyId}',this)">
+                  <i class="fas fa-spinner fa-spin"></i><span>Thinking Process</span>
+                  <i class="fas fa-chevron-down chevron"></i>
+                </button>
+                <div class="reasoning-body" id="${rsnBodyId}"></div>
+              </div>`;
+              log('[CHAT] reasoning 시작', 'recv');
               break;
-
             case "reasoning.delta":
-              fullReasoning += ev.content || "";
-              if (rsnBodyId) {
-                const bd = document.getElementById(rsnBodyId);
-                if (bd) bd.innerHTML = marked.parse(fullReasoning);
-              }
+              fullReasoning+=ev.content||"";
+              if(rsnBodyId){ const bd=document.getElementById(rsnBodyId); if(bd) bd.innerHTML=marked.parse(fullReasoning); }
               break;
-
             case "reasoning.end":
-              // 스피너 → 뇌 아이콘으로 교체
-              if (rsnBodyId) {
-                const toggleBtn = aiDiv.querySelector('.reasoning-toggle');
-                if (toggleBtn) toggleBtn.querySelector('i:first-child').className = 'fas fa-brain';
-              }
+              if(rsnBodyId){ const tb=aiDiv.querySelector('.reasoning-toggle'); if(tb) tb.querySelector('i:first-child').className='fas fa-brain'; }
+              log(`[CHAT] reasoning 완료 (${fullReasoning.length}자)`, 'recv');
               break;
-
             case "message.delta":
-              fullText += ev.content || "";
-              // 기존 reasoning 블록 보존 + 텍스트 추가
-              const textPart = document.getElementById('text_part_' + rsnBodyId);
-              if (rsnBodyId) {
-                let tp = aiDiv.querySelector('.msg-text-part');
-                if (!tp) { tp = document.createElement('div'); tp.className = 'msg-text-part'; aiDiv.appendChild(tp); }
-                tp.innerHTML = marked.parse(fullText);
-              } else {
-                aiDiv.innerHTML = marked.parse(fullText);
-              }
+              fullText+=ev.content||"";
+              if(rsnBodyId){ let tp=aiDiv.querySelector('.msg-text-part'); if(!tp){ tp=document.createElement('div'); tp.className='msg-text-part'; aiDiv.appendChild(tp); } tp.innerHTML=marked.parse(fullText); }
+              else { aiDiv.innerHTML=marked.parse(fullText); }
               break;
-
             case "chat.end":
-              newRespId = ev.result?.response_id || null;
+              newRespId=ev.result?.response_id||null;
+              logJson('[CHAT] chat.end', { response_id:newRespId, tokens:ev.result?.usage }, 'recv');
               break;
+            default:
+              log(`[CHAT] event: ${ev.type}`, 'info');
           }
-          aiDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+          aiDiv.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));
           scrollIfNeeded();
-        } catch(e) { console.warn("[SSE parse fail]", line); }
+        } catch(e){ log(`[CHAT] SSE 파싱 오류: ${line.slice(0,60)}`, 'warn'); }
       }
     }
 
-    // 완료 후 최종 렌더 (hljs 재적용)
-    aiDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
-    if (newRespId) chat.lastResponseId = newRespId;
+    aiDiv.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));
+    if(newRespId) chat.lastResponseId=newRespId;
+    log(`[CHAT] ← 응답 완료 (${fullText.length}자)`, 'recv');
 
-    chat.messages.push({ role: "user", content: userContent });
-    chat.messages.push({ role: "assistant", content: fullReasoning ? `<think>${fullReasoning}</think>\n${fullText}` : fullText });
-    localStorage.setItem('lm_chats', JSON.stringify(chats));
-
-    console.group(`%c[DEBUG] ${currentModel}`, "color:#10b981;font-weight:bold");
-    console.log("response_id:", newRespId);
-    console.log("reasoning:", fullReasoning);
-    console.log("text:", fullText);
-    console.groupEnd();
+    chat.messages.push({ role:"user",content:userContent });
+    chat.messages.push({ role:"assistant",content:fullReasoning?`<think>${fullReasoning}</think>\n${fullText}`:fullText });
+    localStorage.setItem('lm_chats',JSON.stringify(chats));
 
   } catch(e) {
-    aiDiv.innerHTML = `<span style="color:#f87171">오류: ${e.message}</span>`;
-    console.error(e);
+    aiDiv.innerHTML=`<span style="color:#f87171">오류: ${e.message}</span>`;
+    log(`[CHAT] 오류: ${e.message}`, 'error');
   } finally {
-    isSending = false;
-    document.getElementById('sendBtn').disabled = false;
+    isSending=false;
+    document.getElementById('sendBtn').disabled=false;
   }
 }
 
 // ── Chat management ──
 function createNewChat() {
-  const id = Date.now().toString();
-  chats.unshift({ id, title: "새 대화", messages: [], lastResponseId: null });
-  localStorage.setItem('lm_chats', JSON.stringify(chats));
-  selectChat(id);
-  closeSidebar();
+  const id=Date.now().toString();
+  chats.unshift({ id,title:"새 대화",messages:[],lastResponseId:null });
+  localStorage.setItem('lm_chats',JSON.stringify(chats));
+  selectChat(id); closeSidebar();
 }
-function selectChat(id) {
-  currentChatId = id;
-  localStorage.setItem('lm_current_chat_id', id);
-  renderChatBox(); renderChatList();
-}
+function selectChat(id) { currentChatId=id; localStorage.setItem('lm_current_chat_id',id); renderChatBox(); renderChatList(); }
 function renderChatList() {
-  const list = document.getElementById('chat-list'); list.innerHTML = "";
-  chats.forEach(c => {
-    const d = document.createElement('div');
-    d.className = `chat-item ${currentChatId === c.id ? 'active' : ''}`;
-    d.onclick = () => { selectChat(c.id); closeSidebar(); };
-    d.innerHTML = `<i class="far fa-comment" style="opacity:.5"></i><span>${c.title}</span><i class="fas fa-times del-btn" onclick="delChat('${c.id}',event)"></i>`;
+  const list=document.getElementById('chat-list'); list.innerHTML="";
+  chats.forEach(c=>{
+    const d=document.createElement('div');
+    d.className=`chat-item ${currentChatId===c.id?'active':''}`;
+    d.onclick=()=>{ selectChat(c.id); closeSidebar(); };
+    d.innerHTML=`<i class="far fa-comment" style="opacity:.5"></i><span>${c.title}</span><i class="fas fa-times del-btn" onclick="delChat('${c.id}',event)"></i>`;
     list.appendChild(d);
   });
 }
-function delChat(id, e) {
+function delChat(id,e) {
   e.stopPropagation();
-  chats = chats.filter(c => c.id !== id);
-  if (currentChatId === id) currentChatId = chats.length ? chats[0].id : null;
-  localStorage.setItem('lm_chats', JSON.stringify(chats));
+  chats=chats.filter(c=>c.id!==id);
+  if(currentChatId===id) currentChatId=chats.length?chats[0].id:null;
+  localStorage.setItem('lm_chats',JSON.stringify(chats));
   renderChatList(); renderChatBox();
 }
 function renderChatBox() {
-  chatBox.innerHTML = "";
-  const chat = chats.find(c => c.id === currentChatId);
-  if (!chat) return;
-  chat.messages.forEach(m => {
-    if (Array.isArray(m.content)) {
-      const txt = m.content.find(i => i.type === 'text')?.text;
-      const img = m.content.find(i => i.type === 'image_url')?.image_url?.url;
-      appendMsg(m.role, txt, img);
-    } else appendMsg(m.role, m.content);
+  chatBox.innerHTML="";
+  const chat=chats.find(c=>c.id===currentChatId);
+  if(!chat) return;
+  chat.messages.forEach(m=>{
+    if(Array.isArray(m.content)){ const txt=m.content.find(i=>i.type==='text')?.text; const img=m.content.find(i=>i.type==='image_url')?.image_url?.url; appendMsg(m.role,txt,img); }
+    else appendMsg(m.role,m.content);
   });
 }
-
-function appendMsg(role, content, imgData = null) {
-  const div = document.createElement('div');
-  div.className = `message ${role}`;
-  if (role === 'user') {
-    div.innerText = content;
-    if (imgData) { const img = document.createElement('img'); img.src = imgData; img.className = 'msg-image'; div.appendChild(img); }
+function appendMsg(role,content,imgData=null) {
+  const div=document.createElement('div');
+  div.className=`message ${role}`;
+  if(role==='user'){
+    div.innerText=content;
+    if(imgData){ const img=document.createElement('img'); img.src=imgData; img.className='msg-image'; div.appendChild(img); }
   } else {
-    if (!content) {
-      // 빈 상태 (스트리밍 시작 전)
-    } else if (content.includes('<think>')) {
-      const m = content.match(/<think>([\s\S]*?)<\/think>/);
-      const txt = content.replace(/<think>[\s\S]*?<\/think>\n?/, '').trim();
-      div.innerHTML = renderBlocks(txt, m?.[1], false);
-    } else {
-      div.innerHTML = marked.parse(content);
-    }
-    div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    if(!content){}
+    else if(content.includes('<think>')){ const m=content.match(/<think>([\s\S]*?)<\/think>/); const txt=content.replace(/<think>[\s\S]*?<\/think>\n?/,'').trim(); div.innerHTML=renderBlocks(txt,m?.[1],false); }
+    else { div.innerHTML=marked.parse(content); }
+    div.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));
   }
   chatBox.appendChild(div);
   scrollIfNeeded();
   return div;
 }
 
-// ── Input auto-resize ──
-chatInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    // IME 조합 중(한글 등)이면 무시 — 조합 완료 후 keydown이 다시 발생함
-    if (e.isComposing || e.keyCode === 229) return;
-    sendMessage();
-  }
+// ── Input ──
+chatInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); if(e.isComposing||e.keyCode===229) return; sendMessage(); }
 });
-chatInput.addEventListener('input', function() {
-  this.style.height = '46px';
-  this.style.height = Math.min(this.scrollHeight, 180) + 'px';
-});
+chatInput.addEventListener('input',function(){ this.style.height='46px'; this.style.height=Math.min(this.scrollHeight,180)+'px'; });
 
 // ── Init ──
-apiFetch("/api/v1/models").then(r => r.json()).then(d => {
-  const loaded = d.models.find(m => m.loaded_instances?.length > 0);
-  if (loaded) syncModelUI(loaded.key);
-}).catch(() => { document.getElementById('model-info').innerHTML = "<span style='color:#f87171'>● 오프라인</span>"; });
+apiFetch("/api/v1/models").then(r=>r.json()).then(d=>{
+  const loaded=d.models.find(m=>m.loaded_instances?.length>0);
+  if(loaded){ syncModelUI(loaded.key); log(`[INIT] 로드된 모델: ${loaded.key}`,'info'); }
+  else { log('[INIT] 로드된 모델 없음','warn'); }
+}).catch(()=>{ document.getElementById('model-info').innerHTML="<span style='color:#f87171'>● 오프라인</span>"; log('[INIT] 서버 연결 실패','error'); });
 
-if (chats.length === 0) createNewChat();
-else selectChat(currentChatId || chats[0].id);
+if(chats.length===0) createNewChat();
+else selectChat(currentChatId||chats[0].id);
 </script>
 </body>
 </html>
