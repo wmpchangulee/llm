@@ -89,7 +89,7 @@
     /* Modal */
     #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;justify-content:center;align-items:center;padding:16px;}
     #modal.show{display:flex;}
-    .modal-box{background:var(--sidebar-bg);padding:22px;border-radius:14px;width:100%;max-width:560px;max-height:88dvh;overflow-y:auto;border:1px solid var(--border);}
+    .modal-box{background:var(--sidebar-bg);padding:22px;border-radius:14px;width:100%;max-width:640px;max-height:88dvh;overflow-y:auto;border:1px solid var(--border);}
     .model-item{background:var(--card-bg);padding:14px;border-radius:10px;margin-bottom:9px;border:2px solid transparent;cursor:pointer;}
     .model-item:hover{border-color:#444;}
     .model-item.active{border-color:var(--green);}
@@ -184,6 +184,52 @@
     }
     #log-toggle .log-dot.active{display:block;}
 
+
+    /* Model detail */
+    .model-detail{margin-top:8px;font-size:.72rem;color:var(--muted);line-height:1.55;}
+    .model-detail-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;}
+    .model-detail-kv{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.7rem;color:var(--text);}
+    .model-detail-kv b{color:var(--muted);font-weight:600;margin-right:4px;}
+    .model-detail-section{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+    .model-detail-section h5{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+    .model-item .model-actions{display:flex;gap:6px;margin-top:10px;}
+    .model-item .model-actions button{flex:1;border:none;border-radius:7px;padding:8px 0;cursor:pointer;font-size:.78rem;font-weight:700;}
+    .btn-load{background:var(--green);color:#fff;}
+    .btn-load:hover{filter:brightness(1.12);}
+    .btn-unload{background:#ffffff12;color:var(--text);border:1px solid var(--border)!important;}
+    .btn-unload:hover{border-color:#ef4444!important;color:#f87171;}
+    .btn-select{background:var(--accent);color:#fff;}
+
+    /* Load config panel */
+    #load-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:110;justify-content:center;align-items:center;padding:16px;}
+    #load-panel.show{display:flex;}
+    .load-box{background:var(--sidebar-bg);padding:22px;border-radius:14px;width:100%;max-width:480px;max-height:88dvh;overflow-y:auto;border:1px solid var(--border);}
+    .load-box h3{margin-bottom:4px;font-size:1.05rem;}
+    .load-box .load-sub{font-size:.78rem;color:var(--muted);margin-bottom:16px;word-break:break-all;}
+    .load-field{margin-bottom:14px;}
+    .load-field label{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;font-weight:600;margin-bottom:6px;color:var(--text);}
+    .load-field label .hint{font-weight:400;color:var(--muted);font-size:.72rem;}
+    .load-field input[type=number],.load-field input[type=text],.load-field select{
+      width:100%;background:var(--card-bg);border:1px solid var(--border);color:var(--text);
+      padding:10px 12px;border-radius:8px;outline:none;font-size:.88rem;font-family:inherit;
+    }
+    .load-field input:focus,.load-field select:focus{border-color:var(--accent);}
+    .load-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:11px 12px;}
+    .load-toggle span{font-size:.85rem;font-weight:600;}
+    .load-toggle .desc{font-size:.7rem;color:var(--muted);font-weight:400;margin-top:2px;}
+    .switch{position:relative;width:42px;height:24px;flex-shrink:0;}
+    .switch input{opacity:0;width:0;height:0;}
+    .switch .slider{position:absolute;inset:0;background:#475569;border-radius:24px;cursor:pointer;transition:.2s;}
+    .switch .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+    .switch input:checked+.slider{background:var(--green);}
+    .switch input:checked+.slider:before{transform:translateX(18px);}
+    .load-actions{display:flex;gap:8px;margin-top:18px;}
+    .load-actions button{flex:1;border:none;border-radius:8px;padding:12px 0;cursor:pointer;font-size:.88rem;font-weight:700;}
+    .load-cancel{background:#ffffff12;color:var(--text);border:1px solid var(--border)!important;}
+    .load-submit{background:var(--green);color:#fff;}
+    .load-submit:disabled{opacity:.5;cursor:not-allowed;}
+    .sidebar-model-meta{margin-top:8px;font-size:.72rem;color:var(--muted);line-height:1.5;}
+
     @media(max-width:639px){
       #sidebar{position:fixed;height:100dvh;transform:translateX(-100%);}
       #sidebar.show{transform:translateX(0);}
@@ -248,6 +294,20 @@
   <button class="log-clear-btn" onclick="clearLog()"><i class="fas fa-trash-alt" style="margin-right:5px"></i>로그 지우기</button>
 </div>
 
+
+<!-- Load Config Panel -->
+<div id="load-panel">
+  <div class="load-box">
+    <h3 id="load-title">모델 로드</h3>
+    <div class="load-sub" id="load-subkey"></div>
+    <div id="load-fields"></div>
+    <div class="load-actions">
+      <button class="load-cancel" onclick="closeLoadPanel()">취소</button>
+      <button class="load-submit" id="load-submit-btn" onclick="confirmLoadModel()">로드</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal -->
 <div id="modal">
   <div class="modal-box">
@@ -296,6 +356,8 @@ let currentChatId = localStorage.getItem('lm_current_chat_id');
 // ── 검색 상태 ──
 const SEARCH_PAGE_SIZE = 10; // HF API 한 번에 가져올 개수
 let searchState = { query:'', sort:'downloads', page:0, totalFetched:0, hasMore:true, allResults:[] };
+let modelsCache = []; // /api/v1/models 캐시
+let pendingLoadModel = null; // 로드 패널에서 선택 중인 모델
 
 marked.setOptions({ breaks:true, gfm:true });
 
@@ -360,37 +422,126 @@ function handleFile(e) {
 function clearImg() { imgBase64=null; document.getElementById('fileInput').value=""; document.getElementById('img-preview').style.display='none'; }
 
 // ── Modal ──
+function hasReasoning(m) {
+  const r = m?.capabilities?.reasoning;
+  if (r && (r.allowed_options?.length || r.default)) return true;
+  const k = (m?.key||'').toLowerCase();
+  return k.includes('r1') || k.includes('reasoning');
+}
+function modelBadgesHtml(m) {
+  const c = m.capabilities || {};
+  const isV = c.vision === true, isT = c.trained_for_tool_use === true, isR = hasReasoning(m);
+  const loaded = m.loaded_instances?.length > 0;
+  const type = (m.type||'llm').toUpperCase();
+  return `
+    <span class="badge">${escHtml(type)}</span>
+    ${isV?'<span class="badge bv">VIS</span>':''}
+    ${isT?'<span class="badge bt">TOOL</span>':''}
+    ${isR?'<span class="badge br">RSN</span>':''}
+    ${loaded?'<span class="badge bl">LOADED</span>':''}`;
+}
+function modelDetailHtml(m, compact=false) {
+  const q = m.quantization;
+  const qLabel = q ? `${q.name||''}${q.bits_per_weight!=null?' ('+q.bits_per_weight+'-bit)':''}` : '';
+  const caps = m.capabilities || {};
+  const rsn = caps.reasoning;
+  const rsnLabel = rsn
+    ? `reasoning: ${(rsn.allowed_options||[]).join('/')||'-'} (default ${rsn.default||'-'})`
+    : '';
+  const inst = (m.loaded_instances||[])[0];
+  const cfg = inst?.config || {};
+  const rows = [
+    m.publisher && ['publisher', m.publisher],
+    m.architecture && ['arch', m.architecture],
+    qLabel && ['quant', qLabel],
+    m.size_bytes && ['size', formatBytes(m.size_bytes)],
+    m.params_string && ['params', m.params_string],
+    m.format && ['format', m.format],
+    m.max_context_length && ['max ctx', formatMax(m.max_context_length)],
+    m.selected_variant && ['variant', m.selected_variant],
+  ].filter(Boolean);
+
+  let html = `<div class="model-detail">`;
+  html += `<div class="model-detail-row">${rows.map(([k,v])=>
+    `<span class="model-detail-kv"><b>${escHtml(k)}</b>${escHtml(String(v))}</span>`
+  ).join('')}</div>`;
+
+  if (rsnLabel || caps.vision!=null || caps.trained_for_tool_use!=null) {
+    html += `<div class="model-detail-section"><h5>Capabilities</h5><div class="model-detail-row">`;
+    if (caps.vision!=null) html += `<span class="model-detail-kv"><b>vision</b>${caps.vision?'yes':'no'}</span>`;
+    if (caps.trained_for_tool_use!=null) html += `<span class="model-detail-kv"><b>tools</b>${caps.trained_for_tool_use?'yes':'no'}</span>`;
+    if (rsnLabel) html += `<span class="model-detail-kv">${escHtml(rsnLabel)}</span>`;
+    html += `</div></div>`;
+  }
+
+  if (inst) {
+    html += `<div class="model-detail-section"><h5>Loaded Instance</h5>`;
+    html += `<div style="font-size:.7rem;margin-bottom:4px;color:var(--text)">id: ${escHtml(inst.id)}</div>`;
+    const cfgRows = Object.entries(cfg);
+    if (cfgRows.length) {
+      html += `<div class="model-detail-row">${cfgRows.map(([k,v])=>
+        `<span class="model-detail-kv"><b>${escHtml(k)}</b>${escHtml(String(v))}</span>`
+      ).join('')}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (!compact && m.variants?.length) {
+    html += `<div class="model-detail-section"><h5>Variants</h5><div class="model-detail-row">`;
+    html += m.variants.map(v=>`<span class="model-detail-kv">${escHtml(v)}</span>`).join('');
+    html += `</div></div>`;
+  }
+
+  if (m.description) {
+    html += `<div class="model-detail-section" style="font-size:.72rem">${escHtml(m.description)}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderModelItem(m) {
+  const loaded = m.loaded_instances?.length > 0;
+  const isActive = currentModel === m.key;
+  const d = document.createElement('div');
+  d.className = `model-item ${isActive?'active':''}`;
+  const keyEsc = m.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  d.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="min-width:0;flex:1">
+        <b style="font-size:.92rem">${escHtml(m.display_name||m.key)}</b>
+        <div style="margin-top:3px;font-size:.73rem;color:var(--muted);word-break:break-all">${escHtml(m.key)}</div>
+      </div>
+    </div>
+    <div class="badges" style="margin-top:7px">${modelBadgesHtml(m)}</div>
+    ${modelDetailHtml(m)}
+    <div class="model-actions">
+      ${loaded && isActive
+        ? `<button class="btn-select" onclick="event.stopPropagation();closeModal()">사용 중</button>`
+        : `<button class="btn-load" onclick="event.stopPropagation();openLoadPanel('${keyEsc}')">${loaded?'재로드':'로드'}</button>`}
+      ${loaded
+        ? `<button class="btn-unload" onclick="event.stopPropagation();unloadModel('${keyEsc}')">언로드</button>`
+        : ''}
+      ${loaded && !isActive
+        ? `<button class="btn-select" onclick="event.stopPropagation();selectLoadedModel('${keyEsc}')">선택</button>`
+        : ''}
+    </div>`;
+  return d;
+}
+
 async function openModal() {
   document.getElementById('modal').classList.add('show');
   const list = document.getElementById('modal-list');
   list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-circle-notch fa-spin'></i></div>";
   try {
     const data = await apiFetch("/api/v1/models").then(r=>r.json());
+    modelsCache = data.models || [];
     list.innerHTML = "";
-    data.models.forEach(m => {
-      const loaded = m.loaded_instances?.length > 0;
-      const isV = m.capabilities?.vision===true, isT = m.capabilities?.trained_for_tool_use===true;
-      const isR = m.key.toLowerCase().includes('r1')||m.key.toLowerCase().includes('reasoning');
-      const d = document.createElement('div');
-      d.className = `model-item ${currentModel===m.key?'active':''}`;
-      d.onclick = () => switchModel(m.key);
-      d.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:6px">
-            <b>${m.display_name||m.id}</b>
-            ${loaded?'<span class="badge bl">LOADED</span>':''}
-          </div>
-        </div>
-        <div class="badges">
-          <span class="badge">TXT</span>
-          ${isV?'<span class="badge bv">VIS</span>':''}
-          ${isT?'<span class="badge bt">TOOL</span>':''}
-          ${isR?'<span class="badge br">RSN</span>':''}
-        </div>
-        <div style="margin-top:5px;font-size:.73rem;color:var(--muted)">${m.key}</div>`;
-      list.appendChild(d);
-    });
-  } catch(e) { list.innerHTML = `<div style='color:#f87171'>연결 실패: ${e.message}</div>`; }
+    if (!modelsCache.length) {
+      list.innerHTML = "<div style='text-align:center;padding:20px;color:var(--muted)'>설치된 모델이 없습니다</div>";
+      return;
+    }
+    modelsCache.forEach(m => list.appendChild(renderModelItem(m)));
+  } catch(e) { list.innerHTML = `<div style='color:#f87171'>연결 실패: ${escHtml(e.message)}</div>`; }
 }
 function closeModal() { document.getElementById('modal').classList.remove('show'); }
 function switchTab(tab) {
@@ -399,8 +550,151 @@ function switchTab(tab) {
   document.getElementById('tab-download').classList.toggle('active', tab==='download');
 }
 
+function selectLoadedModel(key) {
+  syncModelUI(key);
+  closeModal();
+  log(`[MODEL] 선택: ${key}`, 'info');
+}
+
+async function unloadModel(key) {
+  if (isSending) return;
+  try {
+    const m = modelsCache.find(x=>x.key===key) || (await apiFetch("/api/v1/models").then(r=>r.json()).then(d=>d.models.find(x=>x.key===key)));
+    const instances = m?.loaded_instances || [];
+    if (!instances.length) { alert('로드된 인스턴스가 없습니다'); return; }
+    log(`[MODEL] 언로드 → ${key}`, 'warn');
+    for (const inst of instances) {
+      await apiFetch("/api/v1/models/unload",{ method:"POST", body:JSON.stringify({ instance_id:inst.id }) });
+    }
+    if (currentModel === key) {
+      currentModel = null;
+      document.getElementById('topbar-model').textContent = '모델 미선택';
+      document.getElementById('model-info').innerHTML = "<span style='color:var(--muted)'>● 모델 없음</span>";
+    }
+    log(`[MODEL] 언로드 완료: ${key}`, 'send');
+    openModal();
+  } catch(e) {
+    log(`[MODEL] 언로드 오류: ${e.message}`, 'error');
+    alert('언로드 오류: '+e.message);
+  }
+}
+
+// ── Load Config Panel ──
+function defaultLoadParams(m) {
+  const cfg = m.loaded_instances?.[0]?.config || {};
+  const maxCtx = m.max_context_length || 8192;
+  const ctx = cfg.context_length || Math.min(4096, maxCtx);
+  return {
+    context_length: ctx,
+    eval_batch_size: cfg.eval_batch_size ?? 512,
+    flash_attention: cfg.flash_attention ?? true,
+    offload_kv_cache_to_gpu: cfg.offload_kv_cache_to_gpu ?? true,
+    num_experts: cfg.num_experts ?? null,
+    echo_load_config: true,
+  };
+}
+
+function openLoadPanel(key) {
+  const m = modelsCache.find(x=>x.key===key);
+  if (!m) { alert('모델 정보를 찾을 수 없습니다'); return; }
+  pendingLoadModel = m;
+  document.getElementById('load-title').textContent = m.display_name || m.key;
+  document.getElementById('load-subkey').textContent = m.key;
+  const p = defaultLoadParams(m);
+  const maxCtx = m.max_context_length || 262144;
+  const isLlm = (m.type||'llm') === 'llm';
+
+  let html = '';
+  html += `
+    <div class="load-field">
+      <label>Context Length <span class="hint">max ${formatMax(maxCtx)}</span></label>
+      <input type="number" id="lf-context_length" min="256" max="${maxCtx}" step="256" value="${p.context_length}">
+    </div>`;
+  if (isLlm) {
+    html += `
+    <div class="load-field">
+      <label>Eval Batch Size <span class="hint">입력 토큰 배치</span></label>
+      <input type="number" id="lf-eval_batch_size" min="1" max="4096" step="1" value="${p.eval_batch_size}">
+    </div>
+    <div class="load-field">
+      <label>Num Experts <span class="hint">MoE 전용 · 비MoE면 무시될 수 있음</span></label>
+      <input type="number" id="lf-num_experts" min="1" max="128" step="1" value="${p.num_experts ?? 8}">
+    </div>
+    <div class="load-field">
+      <div class="load-toggle">
+        <div><span>Flash Attention</span><div class="desc">메모리↓ · 속도↑ (llama.cpp)</div></div>
+        <label class="switch"><input type="checkbox" id="lf-flash_attention" ${p.flash_attention?'checked':''}><span class="slider"></span></label>
+      </div>
+    </div>
+    <div class="load-field">
+      <div class="load-toggle">
+        <div><span>Offload KV Cache to GPU</span><div class="desc">끄면 CPU RAM에 KV 캐시 저장</div></div>
+        <label class="switch"><input type="checkbox" id="lf-offload_kv_cache_to_gpu" ${p.offload_kv_cache_to_gpu?'checked':''}><span class="slider"></span></label>
+      </div>
+    </div>`;
+  }
+  html += `
+    <div class="load-field">
+      <div class="load-toggle">
+        <div><span>Echo Load Config</span><div class="desc">응답에 최종 load_config 포함</div></div>
+        <label class="switch"><input type="checkbox" id="lf-echo_load_config" ${p.echo_load_config?'checked':''}><span class="slider"></span></label>
+      </div>
+    </div>`;
+
+  // 스펙 요약
+  html += `<div class="model-detail" style="margin-top:4px">${modelDetailHtml(m, true)}</div>`;
+
+  document.getElementById('load-fields').innerHTML = html;
+  document.getElementById('load-panel').classList.add('show');
+}
+function closeLoadPanel() {
+  document.getElementById('load-panel').classList.remove('show');
+  pendingLoadModel = null;
+  document.getElementById('load-submit-btn').disabled = false;
+  document.getElementById('load-submit-btn').innerHTML = '로드';
+}
+function readLoadParams() {
+  const body = { model: pendingLoadModel.key };
+  const num = (id) => {
+    const el = document.getElementById(id);
+    if (!el || el.value === '') return null;
+    const n = Number(el.value);
+    return Number.isFinite(n) ? n : null;
+  };
+  const bool = (id) => {
+    const el = document.getElementById(id);
+    return el ? !!el.checked : null;
+  };
+  const ctx = num('lf-context_length');
+  if (ctx != null) body.context_length = ctx;
+  const ebs = num('lf-eval_batch_size');
+  if (ebs != null) body.eval_batch_size = ebs;
+  const fa = bool('lf-flash_attention');
+  if (fa != null && document.getElementById('lf-flash_attention')) body.flash_attention = fa;
+  const kv = bool('lf-offload_kv_cache_to_gpu');
+  if (kv != null && document.getElementById('lf-offload_kv_cache_to_gpu')) body.offload_kv_cache_to_gpu = kv;
+  const ne = num('lf-num_experts');
+  if (ne != null && document.getElementById('lf-num_experts')) body.num_experts = ne;
+  const echo = bool('lf-echo_load_config');
+  if (echo != null) body.echo_load_config = echo;
+  return body;
+}
+async function confirmLoadModel() {
+  if (!pendingLoadModel || isSending) return;
+  const key = pendingLoadModel.key;
+  const body = readLoadParams();
+  closeLoadPanel();
+  await switchModel(key, body);
+}
+
 // ── 유틸 ──
 function formatNumber(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
+function formatMax(n) {
+  if (n==null || n==='') return '';
+  const short = formatNumber(n);
+  const full = String(n);
+  return short === full ? full : `${short} (${full})`;
+}
 function formatBytes(b) { if(!b||b<=0) return '?'; const u=['B','KB','MB','GB','TB']; const i=Math.floor(Math.log(b)/Math.log(1024)); return (b/Math.pow(1024,i)).toFixed(i>1?2:0)+' '+u[i]; }
 function fmtDate(iso) { if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('ko-KR',{year:'numeric',month:'short',day:'numeric'}); }
 
@@ -706,37 +1000,77 @@ function renderActiveDownloads() {
 }
 
 // ── Model switch ──
-async function switchModel(key) {
+async function switchModel(key, loadBody=null) {
   if (isSending) return;
   const list = document.getElementById('modal-list');
-  list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-sync fa-spin'></i> 교체 중...</div>";
+  if (list) list.innerHTML = "<div style='text-align:center;padding:20px'><i class='fas fa-sync fa-spin'></i> 교체 중...</div>";
+  const body = loadBody || { model:key, echo_load_config:true };
+  if (!body.model) body.model = key;
   log(`[MODEL] 교체 → ${key}`, 'info');
+  logJson('[MODEL] load body:', body, 'info');
   try {
     const d = await apiFetch("/api/v1/models").then(r=>r.json());
-    for (const m of d.models)
+    modelsCache = d.models || [];
+    for (const m of modelsCache)
       for (const inst of (m.loaded_instances||[]))
         await apiFetch("/api/v1/models/unload",{ method:"POST",body:JSON.stringify({ instance_id:inst.id }) });
-    await apiFetch("/api/v1/models/load",{ method:"POST",body:JSON.stringify({ model:key }) });
-    syncModelUI(key); closeModal();
+
+    const res = await apiFetch("/api/v1/models/load",{ method:"POST",body:JSON.stringify(body) });
+    const result = await res.json();
+    logJson('[MODEL] load 응답:', result, 'recv');
+
+    syncModelUI(key);
+    closeLoadPanel();
+    closeModal();
+
+    const cfg = result.load_config;
+    let cfgMd = '';
+    if (cfg) {
+      cfgMd = '\n\n**Load Config**\n' + Object.entries(cfg).map(([k,v])=>`- \`${k}\`: ${v}`).join('\n');
+    }
+    const t = result.load_time_seconds != null ? `\n로드 시간: **${Number(result.load_time_seconds).toFixed(2)}s**` : '';
     log(`[MODEL] 로드 완료: ${key}`, 'send');
-    appendMsg("assistant", `### 🆕 모델 교체 완료\n**${key}** 준비됐습니다.`);
-  } catch(e) { log(`[MODEL] 오류: ${e.message}`,'error'); alert("오류: "+e.message); openModal(); }
+    appendMsg("assistant", `### 🆕 모델 교체 완료\n**${key}** 준비됐습니다.${t}${cfgMd}`);
+  } catch(e) {
+    log(`[MODEL] 오류: ${e.message}`,'error');
+    alert("오류: "+e.message);
+    const btn = document.getElementById('load-submit-btn');
+    if (btn) { btn.disabled=false; btn.innerHTML='로드'; }
+    openModal();
+  }
 }
 
 function syncModelUI(key) {
   currentModel=key;
   document.getElementById('topbar-model').textContent=key;
   apiFetch("/api/v1/models").then(r=>r.json()).then(d=>{
-    const m=d.models.find(x=>x.key===key), c=m?.capabilities||{};
-    const isV=c.vision===true, isT=c.trained_for_tool_use===true;
-    const isR=key.toLowerCase().includes('r1')||key.toLowerCase().includes('reasoning');
+    modelsCache = d.models || [];
+    const m=modelsCache.find(x=>x.key===key);
+    if (!m) {
+      document.getElementById('model-info').innerHTML=`<b style="color:var(--green)">● ${escHtml(key)}</b>`;
+      return;
+    }
+    const c=m.capabilities||{};
+    const isV=c.vision===true;
+    const inst = m.loaded_instances?.[0];
+    const cfg = inst?.config || {};
+    const q = m.quantization;
     document.getElementById('model-info').innerHTML=`
-      <b style="color:var(--green)">● ${key}</b>
-      <div class="badges" style="margin-top:6px">
-        <span class="badge">TXT</span>
-        ${isV?'<span class="badge bv">VIS</span>':''}
-        ${isT?'<span class="badge bt">TOOL</span>':''}
-        ${isR?'<span class="badge br">RSN</span>':''}
+      <b style="color:var(--green)">● ${escHtml(m.display_name||key)}</b>
+      <div style="margin-top:4px;font-size:.72rem;color:var(--muted);word-break:break-all">${escHtml(key)}</div>
+      <div class="badges" style="margin-top:6px">${modelBadgesHtml(m)}</div>
+      <div class="sidebar-model-meta">
+        ${q?`<div>${escHtml(q.name||'')}${m.size_bytes?' · '+formatBytes(m.size_bytes):''}${m.params_string?' · '+escHtml(m.params_string):''}</div>`:''}
+        ${m.max_context_length?`<div>max ctx ${formatMax(m.max_context_length)}${cfg.context_length?' · loaded '+formatMax(cfg.context_length):''}</div>`:''}
+        ${cfg.flash_attention!=null||cfg.parallel!=null||cfg.num_experts!=null
+          ? `<div>${[
+              cfg.flash_attention?'Flash Attn':null,
+              cfg.parallel!=null?'parallel '+cfg.parallel:null,
+              cfg.num_experts!=null?'experts '+cfg.num_experts:null,
+              cfg.eval_batch_size!=null?'batch '+cfg.eval_batch_size:null,
+              cfg.offload_kv_cache_to_gpu===false?'KV→CPU':null,
+            ].filter(Boolean).join(' · ')}</div>` : ''}
+        ${m.architecture?`<div>${escHtml(m.architecture)}${m.format?' · '+escHtml(m.format):''}${m.publisher?' · '+escHtml(m.publisher):''}</div>`:''}
       </div>`;
     const ib=document.getElementById('imgBtn');
     ib.disabled=!isV; ib.title=isV?"이미지 첨부":"Vision 미지원";
@@ -931,6 +1265,7 @@ chatInput.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); if(e.isComposing||e.keyCode===229) return; sendMessage(); }
 });
 chatInput.addEventListener('input',function(){ this.style.height='46px'; this.style.height=Math.min(this.scrollHeight,180)+'px'; });
+
 
 // ── Init ──
 apiFetch("/api/v1/models").then(r=>r.json()).then(d=>{
